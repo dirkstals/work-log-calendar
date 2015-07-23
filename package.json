@@ -1,0 +1,32 @@
+{
+  "name": "WorkLogCalendar",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/index.html",
+  "window": {
+    "toolbar": true,
+    "frame": true,
+    "width": 800,
+    "height": 730,
+    "icon": "src/images/event@2x.png"
+  },
+  "scripts": {
+    "start": "nw",
+    "build": "nwbuild -p osx64 -o dist -v 0.12.0 .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "vbox": "npm run vbox:sharedfolder && npm run vbox:run",
+    "vbox:sharedfolder": "npm run vbox:sharedfolder:remove && npm run vbox:sharedfolder:add",
+    "vbox:sharedfolder:remove": "VBoxManage sharedfolder remove \"IE10 - Win8\" --name \"Apps\"",
+    "vbox:sharedfolder:add": "VBoxManage sharedfolder add \"IE10 - Win8\" --name \"Apps\" --hostpath \"$(pwd)\" --automount",
+    "vbox:run": "VBoxManage startvm \"IE10 - Win8\""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^3.3.5",
+    "fullcalendar": "^2.3.1",
+    "jquery": "^2.1.4",
+    "moment": "^2.10.3",
+    "xml2js": "^0.4.9"
+  }
+}
