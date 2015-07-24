@@ -9,17 +9,40 @@ var Wevtutil = (function(){
         previousCollection,
         eventIDArray = [],
         events = {
-            '4624': 'on',  // An account was successfully logged on
-            '4672': 'on',  // Special privileges assigned to new logon
-            '4608': 'on',  // Windows is starting up
-            '4609': 'off', // Windows is shutting down
-            '4647': 'off', // User initiated logoff
-            '4800': 'off', // The workstation was locked
-            '4801': 'on',  // The workstation was unlocked
-            '4802': 'off', // screensaver on
-            '4803': 'on',  // screensaver off
-            '1100': 'off'  // The event logging service has shut down
-        };
+
+            Security : {
+                
+                '512' : 'on',  // Windows NT is starting up
+                '513' : 'off', // Windows is shutting down
+                
+                '528' : 'on',  // Successful Logon
+                '538' : 'off', // User Logoff
+                '551' : 'off', // User initiated logoff
+
+                '1100': 'off', // The event logging service has shut down
+
+                '4608': 'on',  // Windows is starting up
+                '4609': 'off', // Windows is shutting down
+                
+                '4800': 'off', // The workstation was locked
+                '4801': 'on',  // The workstation was unlocked
+                
+                '4802': 'off', // screensaver on
+                '4803': 'on',  // screensaver off
+                
+                '4624': 'on',  // An account was successfully logged on
+                '4634': 'off', // An account was logged off
+                '4647': 'off'  // User initiated logoff
+
+            },
+            System : {
+
+                '7001': 'on', // User Logon Notification for Customer Experience Improvement Program 
+                '7002': 'off' // User Logoff Notification for Customer Experience Improvement Program 
+
+            }
+        },
+        eventEnvironment = 'System';
 
 
     var options = {
@@ -30,7 +53,7 @@ var Wevtutil = (function(){
     /**
      * prepare eventIDArray
      */
-    Object.keys(events).forEach(function(key) {
+    Object.keys(events[eventEnvironment]).forEach(function(key) {
 
         eventIDArray.push('(EventID=' + key + ')');
     });
@@ -68,7 +91,7 @@ var Wevtutil = (function(){
          * execute the script wevtutil
          * set event handlers for wevtutil script
          */
-        wevtutil = spawn('wevtutil', ['qe', 'Security', '/q:*[System[' + eventIDArray.join(' or ') + ']]']);
+        wevtutil = spawn('wevtutil', ['qe', eventEnvironment, '/q:*[System[' + eventIDArray.join(' or ') + ']]']);
         wevtutil.stdout.setEncoding('utf8');
         wevtutil.stdout.on('data', _wevtutilOutHandler);
         wevtutil.stderr.on('data', _wevtutilErrorHandler);
@@ -102,7 +125,7 @@ var Wevtutil = (function(){
 
                 eventArray.push({
                     'date': d,
-                    'event': events[result.Event.System[0].EventID],
+                    'event': events[eventEnvironment][result.Event.System[0].EventID],
                     'log': 'wevtutil ' + result.Event.System[0].EventID
                 });
             }

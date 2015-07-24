@@ -13,6 +13,7 @@ body #content {
 
 header{
     -webkit-app-region: drag;
+    padding-left: 10px;
 }
 
 header ul li{

@@ -225,14 +225,14 @@ $(document).ready(function(){
 
         e.preventDefault();
 
-        win.menu.popup(40, 40);
+        win.showDevTools();
     };
 
     renderCalendar(options);
 
     $('#closeapp').on('click', closeappClickHandler);
 
-    $('#menu-trigger').on('click', menuClickHandler);
+    $('[data-action="devtools"]').on('click', menuClickHandler);
 
 });
 
@@ -242,32 +242,11 @@ $(document).ready(function(){
 
 
 var nativeMenuBar = new gui.Menu({ type: "menubar" });
-var rootMenu;
 
 if(!windows){ 
     
     nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true}); 
-
-    // Append new item to root menu
-    nativeMenuBar.items[0].submenu.insert(
-        new gui.MenuItem({
-            label: 'Dev Tools', 
-            click: function() { win.showDevTools(); }
-        }),
-        2
-    );
-}else{
-
-    // Append new item to root menu
-    nativeMenuBar.append(
-        new gui.MenuItem({
-            label: 'Dev Tools', 
-            click: function() { win.showDevTools(); }
-        })
-    );
 }
-
-
 
 
 win.menu = nativeMenuBar;
