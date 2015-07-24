@@ -10,6 +10,7 @@ require('fullcalendar');
 var windows = process.platform === 'win32';
 
 var gui = require('nw.gui');
+var win = gui.Window.get();
 var script = windows ? require('./scripts/wevtutil') : require('./scripts/pmset');
 
 
@@ -47,6 +48,7 @@ $(document).ready(function(){
         titleFormat: 'D MMMM YYYY',
         columnFormat: 'ddd D',
         defaultView: settings.view[0],
+        eventColor: '#4caf50',
         eventClick: function(calEvent, jsEvent, view) {
 
             alert(calEvent.title);
@@ -204,32 +206,86 @@ $(document).ready(function(){
         renderCalendar(options);
     };
 
+
+    /** 
+     * Close App click handler
+     */
+    var closeappClickHandler = function(e){
+
+        e.preventDefault();
+
+        win.close();
+    };
+
+
+    /** 
+     * Menu click handler
+     */
+    var menuClickHandler = function(e){
+
+        e.preventDefault();
+
+        win.menu.popup(40, 40);
+    };
+
     renderCalendar(options);
+
+    $('#closeapp').on('click', closeappClickHandler);
+
+    $('#menu-trigger').on('click', menuClickHandler);
 
 });
 
+/**
+ * Create a Menu
+ */
 
-var gui = require('nw.gui');
-var win = gui.Window.get();
+
 var nativeMenuBar = new gui.Menu({ type: "menubar" });
+var rootMenu;
 
-if(!windows){
+if(!windows){ 
+    
+    nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true}); 
 
-    nativeMenuBar.createMacBuiltin("Timer", {
-      hideEdit: true,
-      hideWindow: true
-    });
+    // Append new item to root menu
+    nativeMenuBar.items[0].submenu.insert(
+        new gui.MenuItem({
+            label: 'Dev Tools', 
+            click: function() { win.showDevTools(); }
+        }),
+        2
+    );
+}else{
 
-    win.menu = nativeMenuBar;
+    // Append new item to root menu
+    nativeMenuBar.append(
+        new gui.MenuItem({
+            label: 'Dev Tools', 
+            click: function() { win.showDevTools(); }
+        })
+    );
 }
 
-// Listen to main window's close event
-win.on('close', function() {
 
 
+
+win.menu = nativeMenuBar;
+
+
+/** 
+ * Menu click handler
+ */
+var windowsCloseHandler = function(){
+    
     // Hide the window to give user the feeling of closing immediately
     this.hide();
 
     // After closing the new window, close the main window.
     this.close(true);
-});
+};
+
+
+
+// Listen to main window's close event
+win.on('close', windowsCloseHandler);

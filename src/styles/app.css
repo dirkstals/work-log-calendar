@@ -3,6 +3,22 @@
     margin-bottom: 0;
 }
 
+body{
+    padding-bottom: 0;
+}
+
 body #content {
     padding: 0;
+}
+
+header{
+    -webkit-app-region: drag;
+}
+
+header ul li{
+    -webkit-app-region: no-drag;
+}
+
+header ul li a{
+    -webkit-user-select: none;
 }
