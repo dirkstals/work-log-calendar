@@ -1,7 +1,5 @@
 var spawn = require('child_process').spawn,
-    parseString = require('xml2js').parseString,
-    util = require('util'),
-    fs = require('fs');
+    parseString = require('xml2js').parseString;
 
 var Wevtutil = (function(){
 
@@ -11,16 +9,16 @@ var Wevtutil = (function(){
         previousCollection,
         eventIDArray = [],
         events = {
-            '4624': 'on',
-            '4672': 'on',
-            '4608': 'on',
-            '4609': 'off',
-            '4647': 'off',
-            '4800': 'off',
-            '4801': 'on',
-            '4802': 'off',
-            '4803': 'on',
-            '1100': 'off'
+            '4624': 'on',  // An account was successfully logged on
+            '4672': 'on',  // Special privileges assigned to new logon
+            '4608': 'on',  // Windows is starting up
+            '4609': 'off', // Windows is shutting down
+            '4647': 'off', // User initiated logoff
+            '4800': 'off', // The workstation was locked
+            '4801': 'on',  // The workstation was unlocked
+            '4802': 'off', // screensaver on
+            '4803': 'on',  // screensaver off
+            '1100': 'off'  // The event logging service has shut down
         };
 
 

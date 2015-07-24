@@ -1,5 +1,4 @@
-var spawn = require('child_process').spawn,
-    fs = require('fs');
+var spawn = require('child_process').spawn;
 
 var Syslog = (function(){
 
@@ -37,18 +36,6 @@ var Syslog = (function(){
         syslog.stdout.on('data', _syslogOutHandler);
         syslog.stderr.on('data', _syslogErrorHandler);
         syslog.on('close', _syslogCloseHandler);
-
-
-        /*
-        fs.readFile('./syslog.txt', function read(err, data) {
-            if (err) {
-                throw err;
-            }
-
-            _syslogOutHandler(data);
-            _syslogCloseHandler(0);
-        });
-        */
     };
 
 

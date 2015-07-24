@@ -73,18 +73,6 @@ var Pmset = (function(){
             pmset.stdout.on('data', _pmsetOutHandler);
             pmset.stderr.on('data', _pmsetErrorHandler);
             pmset.on('close', _pmsetCloseHandler);
-            
-            
-            /*
-            fs.readFile('./pmset.txt', function read(err, data) {
-                if (err) {
-                    throw err;
-                }
-
-                _pmsetOutHandler(data);
-                _pmsetCloseHandler(0);
-            });
-            */
         }else{
 
             eventArray = previousEventArray.slice(0);
