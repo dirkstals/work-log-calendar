@@ -38,7 +38,14 @@ var Wevtutil = (function(){
             System : {
 
                 '7001': 'on', // User Logon Notification for Customer Experience Improvement Program 
-                '7002': 'off' // User Logoff Notification for Customer Experience Improvement Program 
+                '7002': 'off', // User Logoff Notification for Customer Experience Improvement Program 
+
+                '1074': 'off', // The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)
+                '6005': 'on', // The Event log service was started.
+                '6006': 'off', // The Event log service was stopped.
+                '12'  : 'on', // The operating system started at system time
+                '13'  : 'off',// The operating system is shutting down at system time [Date][Timestamp]
+                '109' : 'off' // The kernel power manager has initiated a shutdown transition
 
             }
         },
@@ -123,10 +130,20 @@ var Wevtutil = (function(){
 
             if(d.getFullYear() == '2015'){
 
+                var eventID;
+
+                if(isNaN(result.Event.System[0].EventID)){
+                    
+                    eventID = result.Event.System[0].EventID[0]['_'];
+                }else{
+
+                    eventID = result.Event.System[0].EventID;
+                }
+
                 eventArray.push({
                     'date': d,
-                    'event': events[eventEnvironment][result.Event.System[0].EventID],
-                    'log': 'wevtutil ' + result.Event.System[0].EventID
+                    'event': events[eventEnvironment][eventID],
+                    'log': 'wevtutil ' + eventID
                 });
             }
         });

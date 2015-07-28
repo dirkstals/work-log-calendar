@@ -12,7 +12,7 @@
   },
   "scripts": {
     "start": "nw",
-    "build": "nwbuild -p osx64 -o dist -v 0.12.0 .",
+    "build": "nwbuild -p osx32,win32 -o dist -v 0.12.0 .",
     "test": "echo \"Error: no test specified\" && exit 1",
     "vbox": "npm run vbox:sharedfolder && npm run vbox:run",
     "vbox:sharedfolder": "npm run vbox:sharedfolder:remove && npm run vbox:sharedfolder:add",
