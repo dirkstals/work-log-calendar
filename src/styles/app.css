@@ -1,6 +1,7 @@
 
-#calendar{
-    margin-bottom: 0;
+html, body {
+  overflow: hidden;
+  height: 100%;
 }
 
 body{
@@ -9,6 +10,10 @@ body{
 
 body #content {
     padding: 0;
+}
+
+body #calendar{
+    margin-bottom: 0;
 }
 
 header{
@@ -22,4 +27,9 @@ header ul li{
 
 header ul li a{
     -webkit-user-select: none;
+}
+
+.fc-scroller{
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
 }
