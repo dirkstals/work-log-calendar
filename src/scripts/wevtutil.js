@@ -37,30 +37,36 @@ var Wevtutil = (function(){
             },
             System : {
 
-                '7001': 'on', // User Logon Notification for Customer Experience Improvement Program 
-                '7002': 'off', // User Logoff Notification for Customer Experience Improvement Program 
+                '12'  : 'on',  // The operating system started at system time
+                '13'  : 'off', // The operating system is shutting down at system time [Date][Timestamp]
+                
+                '109' : 'off', // The kernel power manager has initiated a shutdown transition
 
                 '1074': 'off', // The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)
-                '6005': 'on', // The Event log service was started.
+
+                '6005': 'on',  // The Event log service was started.
                 '6006': 'off', // The Event log service was stopped.
-                '12'  : 'on', // The operating system started at system time
-                '13'  : 'off',// The operating system is shutting down at system time [Date][Timestamp]
-                '109' : 'off' // The kernel power manager has initiated a shutdown transition
+
+                '6013': 'on',  // The system uptime is <number> seconds.
+
+                '7001': 'on',  // User Logon Notification for Customer Experience Improvement Program 
+                '7002': 'off'  // User Logoff Notification for Customer Experience Improvement Program                 
 
             }
-        },
-        eventEnvironment = 'System';
+        };
 
 
     var options = {
-        mergeTime : 1 * 60 * 60 * 1000, // 1 hour
-        cacheTime : 1 * 60 * 60 * 1000 // 1 hour
+        mergeTime: 1 * 60 * 60 * 1000, // 1 hour
+        cacheTime: 1 * 60 * 60 * 1000, // 1 hour
+        eventEnvironment: 'System',
+        previousEnvironment: 'System'
     };
 
     /**
      * prepare eventIDArray
      */
-    Object.keys(events[eventEnvironment]).forEach(function(key) {
+    Object.keys(events[options.eventEnvironment]).forEach(function(key) {
 
         eventIDArray.push('(EventID=' + key + ')');
     });
@@ -70,9 +76,30 @@ var Wevtutil = (function(){
      * @public
      */
     var getLog = function(callback){
-        
-        eventArray = [];
-          
+
+        var timePassed = Date.now() - previousCallbackTime;
+
+        if(timePassed > options.cacheTime || isNaN(timePassed) || options.previousEnvironment !== options.eventEnvironment){
+
+            eventArray = [];
+            options.previousEnvironment = options.eventEnvironment;
+
+            _executeScript(callback);
+        }else{
+
+            eventArray = previousEventArray.slice(0);
+
+            _startParsing(callback);
+        }
+
+    };
+
+    /**
+     * @function _executeScript
+     * @private
+     */
+    var _executeScript = function(callback){
+
         /**
          * @function _wevtutilCloseHandler
          * @private
@@ -98,13 +125,13 @@ var Wevtutil = (function(){
          * execute the script wevtutil
          * set event handlers for wevtutil script
          */
-        wevtutil = spawn('wevtutil', ['qe', eventEnvironment, '/q:*[System[' + eventIDArray.join(' or ') + ']]']);
+        wevtutil = spawn('wevtutil', ['qe', options.eventEnvironment, '/q:*[System[' + eventIDArray.join(' or ') + ']]']);
         wevtutil.stdout.setEncoding('utf8');
         wevtutil.stdout.on('data', _wevtutilOutHandler);
         wevtutil.stderr.on('data', _wevtutilErrorHandler);
         wevtutil.on('error', _wevtutilErrorHandler);
         wevtutil.on('close', _wevtutilCloseHandler);
-    };
+    }
 
 
 
@@ -142,7 +169,7 @@ var Wevtutil = (function(){
 
                 eventArray.push({
                     'date': d,
-                    'event': events[eventEnvironment][eventID],
+                    'event': events[options.eventEnvironment][eventID],
                     'log': 'wevtutil ' + eventID
                 });
             }
@@ -156,7 +183,7 @@ var Wevtutil = (function(){
      */
     var _startParsing = function(callback){
 
-        //_addOldEvents();
+        _addOldEvents();
         _convertStringToDate();
         _mergeEvents();
         _addCurrentTime();

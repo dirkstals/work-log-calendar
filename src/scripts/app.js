@@ -6,26 +6,27 @@ global.jQuery = window.$;
 require('bootstrap');
 require('moment');
 require('fullcalendar');
+require('./scripts/window');
 
 var windows = process.platform === 'win32';
-
 var gui = require('nw.gui');
-var win = gui.Window.get();
 var script = windows ? require('./scripts/wevtutil') : require('./scripts/pmset');
 
 
 /** start the initialization process */
 $(document).ready(function(){
 
+    var mainWindow = gui.Window.get();
     var calendarElement = $("#calendar");
 
     var settings = {
         weekend : ['Show Weekends', 'Hide Weekends'],
         view : ['agendaWeek', 'month'],
         businessHours : ['Day hours', 'Business hours'],
+        environment : ['System', 'Security'],
+        currentEnvironment: 'System',
         minTime : '06:00:00',
-        maxTime : '20:00:00',
-        slotDuration : '00:30:00'
+        maxTime : '20:00:00'
     };
 
     var options = {
@@ -40,7 +41,7 @@ $(document).ready(function(){
         allDaySlot : false,
         axisFormat : 'H:mm',
         contentHeight: '100%',
-        slotDuration : settings.slotDuration,
+        slotDuration : '00:30:00',
         minTime : settings.minTime,
         maxTime : settings.maxTime,
         timezone: 'local',
@@ -67,6 +68,7 @@ $(document).ready(function(){
                 '<ul class="dropdown-menu dropdown-menu-right">',
                     '<li id="weekendaction"></li>',
                     '<li id="businesshours"></li>',
+                    windows ? '<li id="environment"></li>' : '',
                 '</ul>',
             '</li>',
             '<li id="viewaction"></li>',
@@ -104,14 +106,16 @@ $(document).ready(function(){
         '</ul>'
     ].join(''));
 
-    var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');
-    var businessHours = $('<a href="#">' + settings.businessHours[0] + '</a>')
+    var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');;
+    var businessHours = $('<a href="#">' + settings.businessHours[0] + '</a>');
+    var environment = $('<a href="#">' + settings.environment[1] + ' events</a>');
     var settingsView = $('<a href="#" title="Change Calendar view"><i class="md md-apps"></i></a>');
     var mergetime = leftMenu.find('#mergetime li a');
 
     rightMenu.find('#viewaction').append(settingsView);
     rightMenu.find('#weekendaction').append(settingsWeekend);
     rightMenu.find('#businesshours').append(businessHours);
+    rightMenu.find('#environment').append(environment);
 
     
     /**
@@ -132,6 +136,7 @@ $(document).ready(function(){
         settingsView.on('click', settingsViewClickHandler);
         mergetime.on('click', mergeTimeClickHandler);
         businessHours.on('click', businessHoursClickHandler);
+        environment.on('click', environmentClickHandler);
     };
 
 
@@ -159,6 +164,7 @@ $(document).ready(function(){
         e.preventDefault();
 
         var toggle = (options.minTime) ? 1 : 0;
+        var newBusinessHours = settings.businessHours[toggle];
 
         if(toggle){
 
@@ -170,10 +176,32 @@ $(document).ready(function(){
             options.maxTime = settings.maxTime;
         }
 
-        $(this).text(settings.businessHours[toggle]);
+        $(this).text(newBusinessHours);
 
         renderCalendar(options);
      };
+
+
+    /**
+     * Environment Click Handler
+     */
+    var environmentClickHandler = function(e){
+
+        e.preventDefault();
+
+        var toggle = (settings.currentEnvironment === settings.environment[0]);
+        var antiToggle = toggle ? 0 : 1;
+        var newEnvironment = settings.environment[toggle | 0];
+
+        settings.currentEnvironment = newEnvironment;
+
+        $(this).text(settings.environment[antiToggle] + ' events');
+
+        script.setOptions('eventEnvironment', newEnvironment);
+
+        renderCalendar(options);
+    };
+
 
     /** 
      * Calendar views click handler
@@ -183,10 +211,11 @@ $(document).ready(function(){
         e.preventDefault();
 
         var toggle = (calendarElement.fullCalendar('getView').type === settings.view[0]);
+        var newView = settings.view[toggle | 0];
 
-        options.defaultView = settings.view[toggle | 0];
+        options.defaultView = newView;
 
-        calendarElement.fullCalendar('changeView', settings.view[toggle | 0]); 
+        calendarElement.fullCalendar('changeView', newView); 
         $(this).find('.md').toggleClass('md-apps', !toggle).toggleClass('md-view-week', toggle); 
     };
 
@@ -199,9 +228,10 @@ $(document).ready(function(){
         e.preventDefault();
 
         var toggle = ($(this).text() === settings.weekend[0]);
+        var newWeekend = settings.weekend[toggle | 0];
 
         options.weekends = toggle;
-        $(this).text(settings.weekend[toggle | 0]);
+        $(this).text(newWeekend);
     
         renderCalendar(options);
     };
@@ -214,7 +244,7 @@ $(document).ready(function(){
 
         e.preventDefault();
 
-        win.close();
+        mainWindow.close();
     };
 
 
@@ -225,7 +255,7 @@ $(document).ready(function(){
 
         e.preventDefault();
 
-        win.showDevTools();
+        mainWindow.showDevTools();
     };
 
     renderCalendar(options);
@@ -235,36 +265,3 @@ $(document).ready(function(){
     $('[data-action="devtools"]').on('click', menuClickHandler);
 
 });
-
-/**
- * Create a Menu
- */
-
-
-var nativeMenuBar = new gui.Menu({ type: "menubar" });
-
-if(!windows){ 
-    
-    nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true}); 
-}
-
-
-win.menu = nativeMenuBar;
-
-
-/** 
- * Menu click handler
- */
-var windowsCloseHandler = function(){
-    
-    // Hide the window to give user the feeling of closing immediately
-    this.hide();
-
-    // After closing the new window, close the main window.
-    this.close(true);
-};
-
-
-
-// Listen to main window's close event
-win.on('close', windowsCloseHandler);

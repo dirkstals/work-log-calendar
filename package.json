@@ -8,7 +8,7 @@
     "frame": false,
     "width": 800,
     "height": 730,
-    "icon": "src/images/event@2x.png"
+    "icon": "src/images/event.tiff"
   },
   "scripts": {
     "start": "nw",

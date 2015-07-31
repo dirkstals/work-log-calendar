@@ -18,6 +18,29 @@ var Pmset = (function(){
      */
     var getLog = function(callback){
 
+        var timePassed = Date.now() - previousCallbackTime;
+
+        if(timePassed > options.cacheTime || isNaN(timePassed)){
+
+            eventArray = [];
+            pmsetData = [];
+
+            _executeScript(callback);
+        }else{
+
+            eventArray = previousEventArray.slice(0);
+
+            _startParsing(callback);
+        }
+    };
+
+
+    /**
+     * @function _executeScript
+     * @private
+     */
+    var _executeScript = function(callback){
+
         /**
          * @function _pmsetCloseHandler
          * @private
@@ -57,29 +80,15 @@ var Pmset = (function(){
             })
         };
 
-        var timePassed = Date.now() - previousCallbackTime;
-
-        if(timePassed > options.cacheTime || isNaN(timePassed)){
-
-            eventArray = [];
-            pmsetData = [];
-            
-            /**
-             * execute the script pmset
-             * set event handlers for pmset script
-             */
-            pmset = spawn('pmset', ['-g', 'log']);
-            pmset.stdout.setEncoding('utf8');
-            pmset.stdout.on('data', _pmsetOutHandler);
-            pmset.stderr.on('data', _pmsetErrorHandler);
-            pmset.on('close', _pmsetCloseHandler);
-        }else{
-
-            eventArray = previousEventArray.slice(0);
-
-            _startParsing(callback);
-        }
-
+        /**
+         * execute the script pmset
+         * set event handlers for pmset script
+         */
+        pmset = spawn('pmset', ['-g', 'log']);
+        pmset.stdout.setEncoding('utf8');
+        pmset.stdout.on('data', _pmsetOutHandler);
+        pmset.stderr.on('data', _pmsetErrorHandler);
+        pmset.on('close', _pmsetCloseHandler);
     };
 
 
