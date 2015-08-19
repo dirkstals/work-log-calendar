@@ -76,7 +76,7 @@ var init = function(){
                 '</ul>',
             '</li>',
             '<li class="dropdown">',
-                '<a data-toggle="dropdown" href="#" title="Set merge time"><i class="md md-more-vert"></i></a>',
+                '<a data-toggle="dropdown" href="#" title="Set merge time"><i class="md md-vertical-align-center"></i></a>',
                 '<ul class="dropdown-menu dropdown-menu-right" id="mergetime">',
                     '<li>',
                         '<a data-time="' + (0) + '" href="">off</a>',
@@ -191,8 +191,8 @@ var init = function(){
 
         return $([
             '<li class="dropdown ' + (open ? 'open' : '') + '" dropdown id="eventmenu">',
-                '<a data-toggle="dropdown" dropdown-toggle href="#" aria-haspopup="true" aria-expanded="false">',
-                    '<i class="md md-view-list-alt"></i>',
+                '<a data-toggle="dropdown" title="Filter events" dropdown-toggle href="#" aria-haspopup="true" aria-expanded="false">',
+                    '<i class="md md-list"></i>',
                 '</a>',
                 '<div class="dropdown-menu dropdown-menu-lg pull-right">',
                     '<div class="listview">',
