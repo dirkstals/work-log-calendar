@@ -13,8 +13,10 @@ var gui = require('nw.gui');
 var script = windows ? require('./scripts/wevtutil') : require('./scripts/pmset');
 
 
-/** start the initialization process */
-$(document).ready(function(){
+/**
+ * @function init
+ */
+var init = function(){
 
     var mainWindow = gui.Window.get();
     var calendarElement = $("#calendar");
@@ -60,26 +62,22 @@ $(document).ready(function(){
         }
     };
 
-    //Create and ddd Action button with dropdown in Calendar header. 
+
+    //Create and add Action button with dropdown in Calendar header. 
     var rightMenu = $([
         '<ul class="actions actions-alt" id="fc-actions">',
+            '<li id="viewaction"></li>',
             '<li class="dropdown">',
-                '<a data-toggle="dropdown" href="#"><i class="md md-settings"></i></a>',
+                '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
                 '<ul class="dropdown-menu dropdown-menu-right">',
                     '<li id="weekendaction"></li>',
                     '<li id="businesshours"></li>',
                     windows ? '<li id="environment"></li>' : '',
                 '</ul>',
             '</li>',
-            '<li id="viewaction"></li>',
-        '</ul>'
-    ].join(''));
-
-    var leftMenu = $([
-        '<ul class="actions actions-alt" id="fc-menu">',
             '<li class="dropdown">',
-                '<a data-toggle="dropdown" href="#"><i class="md md-more-vert"></i></a>',
-                '<ul class="dropdown-menu dropdown-menu-left" id="mergetime">',
+                '<a data-toggle="dropdown" href="#" title="Set merge time"><i class="md md-more-vert"></i></a>',
+                '<ul class="dropdown-menu dropdown-menu-right" id="mergetime">',
                     '<li>',
                         '<a data-time="' + (0) + '" href="">off</a>',
                     '</li>',
@@ -106,11 +104,11 @@ $(document).ready(function(){
         '</ul>'
     ].join(''));
 
-    var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');;
+    var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');
     var businessHours = $('<a href="#">' + settings.businessHours[0] + '</a>');
     var environment = $('<a href="#">' + settings.environment[1] + ' events</a>');
     var settingsView = $('<a href="#" title="Change Calendar view"><i class="md md-apps"></i></a>');
-    var mergetime = leftMenu.find('#mergetime li a');
+    var mergetime = rightMenu.find('#mergetime li a');
 
     rightMenu.find('#viewaction').append(settingsView);
     rightMenu.find('#weekendaction').append(settingsWeekend);
@@ -121,7 +119,7 @@ $(document).ready(function(){
     /**
      * Render the Calendar
      */
-    var renderCalendar = function(options){
+    var renderCalendar = function(options, open){
 
         options.defaultDate = calendarElement.fullCalendar('getDate');
 
@@ -129,14 +127,84 @@ $(document).ready(function(){
         calendarElement.fullCalendar(options);
 
         var toolbar = calendarElement.find('.fc-toolbar');
-            toolbar.find('.fc-right').append(rightMenu);
-            toolbar.find('.fc-left').append(leftMenu);
+            toolbar.append(rightMenu);
+
+        if(windows){
+            toolbar.find('#eventmenu').remove();
+            toolbar.find('#fc-actions').append(_getEventMenu(open));
+
+            var activeEvents = script.getActiveEvents();
+
+            $('#eventform [name="events"]').each(function(){
+
+                if(activeEvents.indexOf($(this).val()) >= 0 ){
+
+                    $(this).prop('checked', true);
+                }
+            });
+
+            $('#eventform [name="events"]').on('change', function(e){
+
+                script.setActiveEvents(($('#eventform').serializeArray()).map(function(event){return event.value;}));
+
+                renderCalendar(options, true);
+            });
+        }
 
         settingsWeekend.on('click', settingsWeekendClickHandler);
         settingsView.on('click', settingsViewClickHandler);
         mergetime.on('click', mergeTimeClickHandler);
         businessHours.on('click', businessHoursClickHandler);
         environment.on('click', environmentClickHandler);
+    };
+
+
+    /**
+     * @function _getEventMenu
+     * @private
+     */
+    var _getEventMenu = function(open){
+
+        var events = (script.getEvents())[settings.currentEnvironment];
+        var eventList = [];
+
+        for(var eventID in events){
+
+            if (events.hasOwnProperty(eventID)) {
+
+                eventList.push([    
+                    '<div class="lv-item media">',
+                        '<div class="checkbox pull-left">',
+                            '<label>',
+                                '<input type="checkbox" name="events" value="' + eventID + '">',
+                                '<i class="input-helper"></i>',
+                            '</label>',
+                        '</div>',
+                        '<div class="media-body">',
+                            '<div class="lv-title">' + eventID + '</div>',
+                            '<small class="lv-small">' + events[eventID] + '</small>',
+                        '</div>',
+                    '</div>',
+                ].join(''));
+            }
+        }
+
+        return $([
+            '<li class="dropdown ' + (open ? 'open' : '') + '" dropdown id="eventmenu">',
+                '<a data-toggle="dropdown" dropdown-toggle href="#" aria-haspopup="true" aria-expanded="false">',
+                    '<i class="md md-view-list-alt"></i>',
+                '</a>',
+                '<div class="dropdown-menu dropdown-menu-lg pull-right">',
+                    '<div class="listview">',
+                        '<div class="lv-header">Events</div>',
+                        '<form class="lv-body" id="eventform">',
+                            eventList.join(''),
+                        '</form>',
+                        '<div class="clearfix"></div>',
+                    '</div>',
+                '</div>',
+            '</li>'
+        ].join(''));
     };
 
 
@@ -261,7 +329,11 @@ $(document).ready(function(){
     renderCalendar(options);
 
     $('#closeapp').on('click', closeappClickHandler);
-
     $('[data-action="devtools"]').on('click', menuClickHandler);
+};
 
-});
+
+/**
+ * fire init function on document ready
+ */
+document.addEventListener('DOMContentLoaded', init);

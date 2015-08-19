@@ -1,9 +1,10 @@
 .fc .ui-widget-header {
-  border-width: 0;
+  border-width: 1px;
+  border-color: #f0f0f0;
 }
 
 .fc-toolbar {
-  background-color: #f44336;
+  background-color: #A0A0A0;
   margin-bottom: 0;
   padding: 20px 7px 19px;
   position: relative;

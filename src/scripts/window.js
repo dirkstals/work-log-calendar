@@ -4,7 +4,7 @@ module.exports = (function(window, undefined){
     var windows = process.platform === 'win32';
     var mainWindow = gui.Window.get();
 
-    
+
     /**
      * @function trayMenuCloseClickHandler 
      * @private
@@ -38,7 +38,7 @@ module.exports = (function(window, undefined){
 
         // After closing the new window, close the main window.
         this.setShowInTaskbar(false);
-        //this.close(true);
+        this.close(true);
     };
 
 
@@ -91,5 +91,6 @@ module.exports = (function(window, undefined){
      */
     mainWindow.menu = nativeMenuBar;
     mainWindow.on('close', windowCloseHandler);
+    mainWindow.focus();
 
 })(window);

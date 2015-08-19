@@ -8,50 +8,36 @@ var Wevtutil = (function(){
         previousCallbackTime, 
         previousCollection,
         eventIDArray = [],
+        activeEvents = [],
+        eventStates = [512, 528, 4608, 4801, 4803, 4624, 12, 6005, 6013, 7001], // on states, the rest is off
         events = {
-
             Security : {
-                
-                '512' : 'on',  // Windows NT is starting up
-                '513' : 'off', // Windows is shutting down
-                
-                '528' : 'on',  // Successful Logon
-                '538' : 'off', // User Logoff
-                '551' : 'off', // User initiated logoff
-
-                '1100': 'off', // The event logging service has shut down
-
-                '4608': 'on',  // Windows is starting up
-                '4609': 'off', // Windows is shutting down
-                
-                '4800': 'off', // The workstation was locked
-                '4801': 'on',  // The workstation was unlocked
-                
-                '4802': 'off', // screensaver on
-                '4803': 'on',  // screensaver off
-                
-                '4624': 'on',  // An account was successfully logged on
-                '4634': 'off', // An account was logged off
-                '4647': 'off'  // User initiated logoff
-
+                '512': 'Windows NT is starting up',
+                '513': 'Windows is shutting down', 
+                '528': 'Successful Logon', 
+                '538': 'User Logoff', 
+                '551': 'User initiated logoff', 
+                '1100': 'The event logging service has shut down', 
+                '4608': 'Windows is starting up',
+                '4609': 'Windows is shutting down',
+                '4800': 'The workstation was locked',
+                '4801': 'The workstation was unlocked',
+                '4802': 'screensaver on',
+                '4803': 'screensaver off',
+                '4624': 'An account was successfully logged on',
+                '4634': 'An account was logged off',
+                '4647': 'User initiated logoff'
             },
             System : {
-
-                '12'  : 'on',  // The operating system started at system time
-                '13'  : 'off', // The operating system is shutting down at system time [Date][Timestamp]
-                
-                '109' : 'off', // The kernel power manager has initiated a shutdown transition
-
-                '1074': 'off', // The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)
-
-                '6005': 'on',  // The Event log service was started.
-                '6006': 'off', // The Event log service was stopped.
-
-                '6013': 'on',  // The system uptime is <number> seconds.
-
-                '7001': 'on',  // User Logon Notification for Customer Experience Improvement Program 
-                '7002': 'off'  // User Logoff Notification for Customer Experience Improvement Program                 
-
+                '12': 'The operating system started at system time',
+                '13': 'The operating system is shutting down at system time [Date][Timestamp]',
+                '109': 'The kernel power manager has initiated a shutdown transition',
+                '1074': 'The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)',
+                '6005': 'The Event log service was started.',
+                '6006': 'The Event log service was stopped.',
+                '6013': 'The system uptime is <number> seconds.',
+                '7001': 'User Logon Notification for Customer Experience Improvement Program ',
+                '7002': 'User Logoff Notification for Customer Experience Improvement Program'
             }
         };
 
@@ -63,13 +49,6 @@ var Wevtutil = (function(){
         previousEnvironment: 'System'
     };
 
-    /**
-     * prepare eventIDArray
-     */
-    Object.keys(events[options.eventEnvironment]).forEach(function(key) {
-
-        eventIDArray.push('(EventID=' + key + ')');
-    });
 
     /**
      * @function getLog
@@ -100,6 +79,10 @@ var Wevtutil = (function(){
      */
     var _executeScript = function(callback){
 
+
+        eventIDArray = [];
+
+
         /**
          * @function _wevtutilCloseHandler
          * @private
@@ -122,6 +105,17 @@ var Wevtutil = (function(){
         };
 
         /**
+         * prepare eventIDArray
+         */
+        Object.keys(events[options.eventEnvironment]).forEach(function(key) {
+
+            if(activeEvents.length === 0 || activeEvents.indexOf(key) >= 0){
+
+                eventIDArray.push('(EventID=' + key + ')');                    
+            }
+        });
+
+        /**
          * execute the script wevtutil
          * set event handlers for wevtutil script
          */
@@ -130,7 +124,7 @@ var Wevtutil = (function(){
         wevtutil.stdout.on('data', _wevtutilOutHandler);
         wevtutil.stderr.on('data', _wevtutilErrorHandler);
         wevtutil.on('error', _wevtutilErrorHandler);
-        wevtutil.on('close', _wevtutilCloseHandler);
+        wevtutil.on('close', _wevtutilCloseHandler);    
     }
 
 
@@ -169,7 +163,7 @@ var Wevtutil = (function(){
 
                 eventArray.push({
                     'date': d,
-                    'event': events[options.eventEnvironment][eventID],
+                    'event': eventStates.indexOf(parseInt(eventID)) >= 0 ? 'on' : 'off',
                     'log': 'wevtutil ' + eventID
                 });
             }
@@ -183,7 +177,7 @@ var Wevtutil = (function(){
      */
     var _startParsing = function(callback){
 
-        _addOldEvents();
+        //_addOldEvents();
         _convertStringToDate();
         _mergeEvents();
         _addCurrentTime();
@@ -245,6 +239,9 @@ var Wevtutil = (function(){
                 });
             }
         }
+
+
+        console.log(eventArray.slice(0));
 
         return collection;
     }
@@ -354,7 +351,8 @@ var Wevtutil = (function(){
      }
 
     /**
-     * set options
+     * @function setOptions
+     * @public
      */
     var setOptions = function(key, value){
 
@@ -362,9 +360,42 @@ var Wevtutil = (function(){
     };
 
 
+    /**
+     * @function setActiveEvents
+     * @public
+     */
+    var setActiveEvents = function(value){
+
+        activeEvents = value;
+    };
+
+
+    /**
+     * @function getActiveEvents
+     * @public
+     */
+    var getActiveEvents = function(){
+
+        return activeEvents;
+    };
+
+
+    /**
+     * @function getEvents
+     * @public
+     */
+    var getEvents = function(){
+
+        return events;
+    };
+
+
     return {
-        getLog : getLog,
-        setOptions : setOptions
+        getLog: getLog,
+        setOptions: setOptions,
+        setActiveEvents: setActiveEvents,
+        getActiveEvents: getActiveEvents,
+        getEvents: getEvents
     }
 })();
 
