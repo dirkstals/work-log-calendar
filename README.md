@@ -8,8 +8,8 @@ Windows has a different logging system and therefore it combines a bunch of even
 
 ![Demo](docs/demo.png "Demo")
 
-## Installation
+## Usage
 
-Download the latest release and run the app.
+Download the [latest release](https://github.com/dirkstals/work-log-calendar/releases/latest) for your OS and run the app.
 
 Note: Run as Administrator on Windows
