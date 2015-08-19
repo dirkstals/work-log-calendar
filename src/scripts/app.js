@@ -68,14 +68,6 @@ var init = function(){
         '<ul class="actions actions-alt" id="fc-actions">',
             '<li id="viewaction"></li>',
             '<li class="dropdown">',
-                '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
-                '<ul class="dropdown-menu dropdown-menu-right">',
-                    '<li id="weekendaction"></li>',
-                    '<li id="businesshours"></li>',
-                    windows ? '<li id="environment"></li>' : '',
-                '</ul>',
-            '</li>',
-            '<li class="dropdown">',
                 '<a data-toggle="dropdown" href="#" title="Set merge time"><i class="md md-vertical-align-center"></i></a>',
                 '<ul class="dropdown-menu dropdown-menu-right" id="mergetime">',
                     '<li>',
@@ -99,6 +91,14 @@ var init = function(){
                     '<li>',
                         '<a data-time="' + (2 * 60 * 60 * 1000) + '" href="">2 hours</a>',
                     '</li>',
+                '</ul>',
+            '</li>',
+            '<li class="dropdown">',
+                '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
+                '<ul class="dropdown-menu dropdown-menu-right">',
+                    '<li id="weekendaction"></li>',
+                    '<li id="businesshours"></li>',
+                    windows ? '<li id="environment"></li>' : '',
                 '</ul>',
             '</li>',
         '</ul>'
@@ -131,7 +131,7 @@ var init = function(){
 
         if(windows){
             toolbar.find('#eventmenu').remove();
-            toolbar.find('#fc-actions').append(_getEventMenu(open));
+            toolbar.find('#fc-actions').prepend(_getEventMenu(open));
 
             var activeEvents = script.getActiveEvents();
 
