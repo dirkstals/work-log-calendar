@@ -1,0 +1,35 @@
+
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+
+body{
+    padding-bottom: 0;
+}
+
+body #content {
+    padding: 0;
+}
+
+body #calendar{
+    margin-bottom: 0;
+}
+
+header{
+    -webkit-app-region: drag;
+    padding-left: 10px;
+}
+
+header ul li{
+    -webkit-app-region: no-drag;
+}
+
+header ul li a{
+    -webkit-user-select: none;
+}
+
+.fc-scroller{
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+}

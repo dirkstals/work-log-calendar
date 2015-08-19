@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+        
+        <title>Work Log Calendar</title>
+
+        <link rel="stylesheet" href="../node_modules/fullcalendar/dist/fullcalendar.min.css" />
+
+        <link rel="stylesheet" href="./styles/material-design-iconic-font.min.css" />
+        <link rel="stylesheet" href="./styles/app.min.1.css" />
+        <link rel="stylesheet" href="./styles/app.min.2.css" />
+
+        <link rel="stylesheet" href="./styles/app.css" />
+            
+    </head>
+
+    <body>
+
+        <header id="header" class="toggled">
+
+            <ul class="header-inner">
+
+                <li class="logo">
+                    <a href="#">Work Log Calendar</a>
+                </li>
+                
+                <li class="pull-right">
+
+                    <ul class="actions actions-alt">
+                        <!--
+                        <li>
+                            <a data-action="devtools" href="" title="Open Devtools"><i class="md md-settings-ethernet"></i></a>
+                        </li>
+                        -->
+                        <li>
+                            <a href="#" id="closeapp" title="Close"><i class="md md-close"></i></a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+            
+        </header>
+
+        <section id="main">
+
+            <section id="content">
+
+                <div id="calendar"></div>
+
+            </section>
+
+        </section>
+        
+        <!-- main script -->
+        <script src="./scripts/app.js"></script>
+
+    </body>
+</html>
