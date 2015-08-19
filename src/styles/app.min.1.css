@@ -9865,10 +9865,16 @@ body #content {
 
 .top-menu > li .dropdown-menu-lg {
   padding: 0;
+  overflow: hidden;
 }
 
 .top-menu > li .dropdown-menu-lg .lv-body {
   height: 275px;
+  overflow-y: auto;
+}
+
+.dropdown-menu-lg .lv-body {
+  height: 500px;
   overflow-y: auto;
 }
 
@@ -10534,7 +10540,7 @@ input:focus {
 }
 
 .dropdown-menu.dropdown-menu-lg {
-  width: 300px;
+  width: 500px;
 }
 
 .dropdown-menu.dropdown-menu-sm {
