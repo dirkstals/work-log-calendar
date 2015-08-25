@@ -45,7 +45,7 @@ module.exports = (function(window, undefined){
     /**
      * Create a tray item
      */
-    var tray = new gui.Tray({ title: 'Tray', icon: process._nw_app.manifest.window.icon });
+    var tray = new gui.Tray({ title: 'Tray', icon: 'src/images/icon.tiff' });
 
 
     /**

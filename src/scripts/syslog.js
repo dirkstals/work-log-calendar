@@ -2,7 +2,7 @@ var spawn = require('child_process').spawn;
 
 var Syslog = (function(){
 
-    var eventArray, syslog;
+    var eventArray, syslog, syslogData;
 
     /**
      * @function getLog
@@ -11,6 +11,7 @@ var Syslog = (function(){
     var getLog = function(callback){
         
         eventArray = [];
+        syslogData = [];
             
 
         /**
@@ -22,6 +23,18 @@ var Syslog = (function(){
             if (code !== 0) {
                 console.log('grep process exited with code ' + code);
                 return;
+            }
+
+            var str = syslogData.join('').toString(),
+                pattern = /^(\w{3}\s+\d+\s+\d+\:\d+\:\d+)\s.*SHUTDOWN_TIME.*/gm;
+
+            while ((match = pattern.exec(str))) {
+
+                eventArray.push({
+                    'date' : match[1],
+                    'event': 'off',
+                    'log'  : 'syslog'
+                });
             }
 
             callback(eventArray);
@@ -56,17 +69,7 @@ var Syslog = (function(){
      */
     var _syslogOutHandler = function (data) {
 
-        var str = data.toString(),
-            // pattern = /^(\w{3}\s\d+\s\d+:\d+:\d+)\s.+\sshutdown\[(.+)/gm;
-            pattern = /^(\w{3}\s+\d+\s+\d+\:\d+\:\d+)\s.*SHUTDOWN_TIME.*/gm;
-
-        while ((match = pattern.exec(str))) {
-
-            eventArray.push({
-                "date" : match[1],
-                "event": 'off'
-            });
-        }
+        syslogData.push(data);
     };
 
     return {

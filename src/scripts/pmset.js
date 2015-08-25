@@ -53,14 +53,17 @@ var Pmset = (function(){
             }
 
             var str = pmsetData.join(''),
-                pattern = /^(\d+\-\d+\-\d+\s*\d+\:\d+\:\d+\s*[\+|\-]\d+)\s.*(Display is turned |powerd process is )(.*\b)/gim;
+                pattern = /^(\d+\-\d+\-\d+\s*\d+\:\d+\:\d+\s*[\+|\-]\d+)\s.*(Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim;
 
             while ((match = pattern.exec(str))) {
                 
+                var eventType = ({'on':'on','off':'off','Sleep':'off','Open':'on','started':'on'})[match[3]];
+                var logType = ({'on':'display','off':'display','Sleep':'Clamshell sleep','Open':'Lid Open','started':'processd'})[match[3]];
+                
                 eventArray.push({
                     "date" : new Date(match[1]),
-                    "event": match[3] === 'started' ? 'on' : match[3],
-                    "log" : match[3] === 'started' ? 'processd' : 'display'
+                    "event": eventType,
+                    "log" : logType
                 });
             }
 
@@ -119,7 +122,6 @@ var Pmset = (function(){
 
                     syslogDate.setFullYear(pmsetDate.getFullYear());
                     data[j].date = syslogDate;
-                    data[j].log = "syslog";
                     included = true;
                     break;
                 }
