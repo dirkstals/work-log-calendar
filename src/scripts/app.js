@@ -56,7 +56,29 @@ var init = function(){
         },
         events: function(start, end, timezone, callback) {
 
-            script.getLog(callback);
+            script.getLog(function(collection){
+
+                callback(collection);
+
+                var calendarView = calendarElement.fullCalendar('getView');
+
+                if(calendarView.type === settings.view[0]){
+
+                    var totals = script.getTotals(calendarView, options.minTime, options.maxTime);
+                    var days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+                    for (var i = 0, l = days.length; i < l; i++){
+
+                        if(totals[i]){
+
+                            $('.fc-day-header.fc-' + days[i]).attr('data-total', totals[i]).addClass('total');
+                        }else{
+
+                            $('.fc-day-header.fc-' + days[i]).removeClass('total');
+                        }
+                    }
+                }
+            });
         }
     };
 

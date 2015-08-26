@@ -33,3 +33,18 @@ header ul li a{
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
 }
+
+.fc .ui-widget-header {
+  position: relative;
+}
+
+.fc-day-header.total:before {
+    content : attr(data-total);
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-weight: bold;
+    background: rgba(200,00,0,0.5);
+    color: white;
+    padding: 6px;
+}
