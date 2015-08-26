@@ -25,8 +25,6 @@ var init = function(){
         weekend : ['Show Weekends', 'Hide Weekends'],
         view : ['agendaWeek', 'month'],
         businessHours : ['Day hours', 'Business hours'],
-        environment : ['System', 'Security'],
-        currentEnvironment: 'System',
         minTime : '06:00:00',
         maxTime : '20:00:00'
     };
@@ -98,7 +96,6 @@ var init = function(){
                 '<ul class="dropdown-menu dropdown-menu-right">',
                     '<li id="weekendaction"></li>',
                     '<li id="businesshours"></li>',
-                    windows ? '<li id="environment"></li>' : '',
                 '</ul>',
             '</li>',
         '</ul>'
@@ -106,14 +103,12 @@ var init = function(){
 
     var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');
     var businessHours = $('<a href="#">' + settings.businessHours[0] + '</a>');
-    var environment = $('<a href="#">' + settings.environment[1] + ' events</a>');
     var settingsView = $('<a href="#" title="Change Calendar view"><i class="md md-apps"></i></a>');
     var mergetime = rightMenu.find('#mergetime li a');
 
     rightMenu.find('#viewaction').append(settingsView);
     rightMenu.find('#weekendaction').append(settingsWeekend);
     rightMenu.find('#businesshours').append(businessHours);
-    rightMenu.find('#environment').append(environment);
 
     
     /**
@@ -155,7 +150,6 @@ var init = function(){
         settingsView.on('click', settingsViewClickHandler);
         mergetime.on('click', mergeTimeClickHandler);
         businessHours.on('click', businessHoursClickHandler);
-        environment.on('click', environmentClickHandler);
     };
 
 
@@ -165,7 +159,7 @@ var init = function(){
      */
     var _getEventMenu = function(open){
 
-        var events = (script.getEvents())[settings.currentEnvironment];
+        var events = script.getEvents();
         var eventList = [];
 
         for(var eventID in events){
@@ -248,27 +242,6 @@ var init = function(){
 
         renderCalendar(options);
      };
-
-
-    /**
-     * Environment Click Handler
-     */
-    var environmentClickHandler = function(e){
-
-        e.preventDefault();
-
-        var toggle = (settings.currentEnvironment === settings.environment[0]);
-        var antiToggle = toggle ? 0 : 1;
-        var newEnvironment = settings.environment[toggle | 0];
-
-        settings.currentEnvironment = newEnvironment;
-
-        $(this).text(settings.environment[antiToggle] + ' events');
-
-        script.setOptions('eventEnvironment', newEnvironment);
-
-        renderCalendar(options);
-    };
 
 
     /** 

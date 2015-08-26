@@ -1,52 +1,49 @@
-var spawn = require('child_process').spawn,
-    parseString = require('xml2js').parseString;
+var spawn = require('child_process').spawn;
 
 var Wevtutil = (function(){
 
     var eventArray, 
         wevtutil,
+        wevtutilAsAdmin,
+        wevtutilData,
         previousCallbackTime, 
         previousCollection,
         eventIDArray = [],
         activeEvents = [],
         eventStates = [512, 528, 4608, 4801, 4803, 4624, 12, 6005, 6013, 7001], // on states, the rest is off
         events = {
-            Security : {
-                '512': 'Windows NT is starting up',
-                '513': 'Windows is shutting down', 
-                '528': 'Successful Logon', 
-                '538': 'User Logoff', 
-                '551': 'User initiated logoff', 
-                '1100': 'The event logging service has shut down', 
-                '4608': 'Windows is starting up',
-                '4609': 'Windows is shutting down',
-                '4800': 'The workstation was locked',
-                '4801': 'The workstation was unlocked',
-                '4802': 'screensaver on',
-                '4803': 'screensaver off',
-                '4624': 'An account was successfully logged on',
-                '4634': 'An account was logged off',
-                '4647': 'User initiated logoff'
-            },
-            System : {
-                '12': 'The operating system started at system time',
-                '13': 'The operating system is shutting down at system time [Date][Timestamp]',
-                '109': 'The kernel power manager has initiated a shutdown transition',
-                '1074': 'The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)',
-                '6005': 'The Event log service was started.',
-                '6006': 'The Event log service was stopped.',
-                '6013': 'The system uptime is <number> seconds.',
-                '7001': 'User Logon Notification for Customer Experience Improvement Program ',
-                '7002': 'User Logoff Notification for Customer Experience Improvement Program'
-            }
+            // Security
+            //'512': 'Windows NT is starting up',
+            //'513': 'Windows is shutting down', 
+            //'528': 'Successful Logon', 
+            //'538': 'User Logoff', 
+            //'551': 'User initiated logoff', 
+            '1100': 'The event logging service has shut down', 
+            '4608': 'Windows is starting up',
+            '4609': 'Windows is shutting down',
+            '4800': 'The workstation was locked',
+            '4801': 'The workstation was unlocked',
+            '4802': 'screensaver on',
+            '4803': 'screensaver off',
+            '4624': 'An account was successfully logged on',
+            //'4634': 'An account was logged off',
+            '4647': 'User initiated logoff',
+            // System
+            '12': 'The operating system started at system time',
+            '13': 'The operating system is shutting down at system time [Date][Timestamp]',
+            '109': 'The kernel power manager has initiated a shutdown transition',
+            '1074': 'The process %process% has initiated the power off/restart of computer %computer% on behalf of user %user% for the following reason: Other (Unplanned)',
+            //'6005': 'The Event log service was started.',
+            //'6006': 'The Event log service was stopped.',
+            '6013': 'The system uptime is <number> seconds.',
+            '7001': 'User Logon Notification for Customer Experience Improvement Program ',
+            '7002': 'User Logoff Notification for Customer Experience Improvement Program'
         };
 
 
     var options = {
         mergeTime: 1 * 60 * 60 * 1000, // 1 hour
-        cacheTime: 1 * 60 * 60 * 1000, // 1 hour
-        eventEnvironment: 'System',
-        previousEnvironment: 'System'
+        cacheTime: 1 * 60 * 60 * 1000  // 1 hour
     };
 
 
@@ -58,10 +55,10 @@ var Wevtutil = (function(){
 
         var timePassed = Date.now() - previousCallbackTime;
 
-        if(timePassed > options.cacheTime || isNaN(timePassed) || options.previousEnvironment !== options.eventEnvironment){
+        if(timePassed > options.cacheTime || isNaN(timePassed)){
 
             eventArray = [];
-            options.previousEnvironment = options.eventEnvironment;
+            wevtutilData = [];
 
             _executeScript(callback);
         }else{
@@ -94,20 +91,47 @@ var Wevtutil = (function(){
                 return;
             }
 
-            console.log(eventArray.slice(0));
+            /**
+             * @function _wevtutilAsAdminCloseHandler
+             * @private
+             */
+            var _wevtutilAsAdminCloseHandler = function(code){
 
-            _sortEventArray();
-            _removeDoubles();
+                var str = wevtutilData.join(''),
+                    pattern = /(\d{4}\-\d{2}\-\d{2}T\d{2}\:\d{2}\:\d{2}.\d{3})\s+.*:\s+(\d+)/gim;
 
-            previousEventArray = eventArray.slice(0);
+                while ((match = pattern.exec(str))) {
 
-            _startParsing(callback);
+                    eventArray.push({
+                        "date" : new Date(match[1].replace('T',' ')),
+                        "event": eventStates.indexOf(parseInt(match[2])) >= 0 ? 'on' : 'off',
+                        "log" : '[' + match[2] + '] ' + events[match[2]]
+                    });
+                };
+
+                previousCallbackTime = new Date();
+
+                _sortEventArray();
+                _removeDoubles();
+
+                previousEventArray = eventArray.slice(0);
+
+                _startParsing(callback);
+            };
+
+
+            wevtutilAsAdmin = spawn('wevtutil', ['qe', 'Security', '/q:*[System[' + eventIDArray.join(' or ') + ']]', '/f:text']);
+            wevtutilAsAdmin.stdout.setEncoding('utf8');
+            wevtutilAsAdmin.stdout.on('data', _wevtutilOutHandler);
+            wevtutilAsAdmin.stderr.on('data', _wevtutilErrorHandler);
+            wevtutilAsAdmin.on('error', _wevtutilErrorHandler);
+            wevtutilAsAdmin.on('close', _wevtutilAsAdminCloseHandler); 
         };
 
         /**
          * prepare eventIDArray
          */
-        Object.keys(events[options.eventEnvironment]).forEach(function(key) {
+        Object.keys(events).forEach(function(key) {
 
             if(activeEvents.length === 0 || activeEvents.indexOf(key) >= 0){
 
@@ -119,12 +143,12 @@ var Wevtutil = (function(){
          * execute the script wevtutil
          * set event handlers for wevtutil script
          */
-        wevtutil = spawn('wevtutil', ['qe', options.eventEnvironment, '/q:*[System[' + eventIDArray.join(' or ') + ']]']);
+        wevtutil = spawn('wevtutil', ['qe', 'System', '/q:*[System[' + eventIDArray.join(' or ') + ']]', '/f:text']);
         wevtutil.stdout.setEncoding('utf8');
         wevtutil.stdout.on('data', _wevtutilOutHandler);
         wevtutil.stderr.on('data', _wevtutilErrorHandler);
         wevtutil.on('error', _wevtutilErrorHandler);
-        wevtutil.on('close', _wevtutilCloseHandler);    
+        wevtutil.on('close', _wevtutilCloseHandler);       
     }
 
 
@@ -145,29 +169,7 @@ var Wevtutil = (function(){
      */
     var _wevtutilOutHandler = function (data) {
 
-        parseString(data, function (err, result) {
-
-            var d = new Date(result.Event.System[0].TimeCreated[0]['$'].SystemTime);
-
-            if(d.getFullYear() == '2015'){
-
-                var eventID;
-
-                if(isNaN(result.Event.System[0].EventID)){
-                    
-                    eventID = result.Event.System[0].EventID[0]['_'];
-                }else{
-
-                    eventID = result.Event.System[0].EventID;
-                }
-
-                eventArray.push({
-                    'date': d,
-                    'event': eventStates.indexOf(parseInt(eventID)) >= 0 ? 'on' : 'off',
-                    'log': 'wevtutil ' + eventID
-                });
-            }
-        });
+        wevtutilData.push(data);
     };
 
 
@@ -177,7 +179,7 @@ var Wevtutil = (function(){
      */
     var _startParsing = function(callback){
 
-        //_addOldEvents();
+        _addOldEvents();
         _convertStringToDate();
         _mergeEvents();
         _addCurrentTime();
@@ -239,9 +241,6 @@ var Wevtutil = (function(){
                 });
             }
         }
-
-
-        console.log(eventArray.slice(0));
 
         return collection;
     }
