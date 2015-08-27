@@ -364,8 +364,10 @@ var Pmset = (function(){
         options[key] = value;
     };
 
+
     /**
-     *
+     * @function getTotals
+     * @public
      */
     var getTotals = function(view, minTime, maxTime){
 

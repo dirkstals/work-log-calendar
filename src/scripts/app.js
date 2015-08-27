@@ -7,6 +7,7 @@ require('bootstrap');
 require('moment');
 require('fullcalendar');
 require('./scripts/window');
+require('./scripts/bootstrap-slider');
 
 var windows = process.platform === 'win32';
 var gui = require('nw.gui');
@@ -25,61 +26,11 @@ var init = function(){
         weekend : ['Show Weekends', 'Hide Weekends'],
         view : ['agendaWeek', 'month'],
         businessHours : ['Day hours', 'Business hours'],
+        totals : ['Show totals', 'Hide totals'],
+        showTotals: 0,
         minTime : '06:00:00',
-        maxTime : '20:00:00'
-    };
-
-    var options = {
-        header: {
-            right: '',
-            center: 'prev, title, next',
-            left: ''
-        },
-        theme: true, 
-        firstDay : 1,
-        weekends : false,
-        allDaySlot : false,
-        axisFormat : 'H:mm',
-        contentHeight: '100%',
-        slotDuration : '00:30:00',
-        minTime : settings.minTime,
-        maxTime : settings.maxTime,
-        timezone: 'local',
-        timeFormat: 'H(:mm)',
-        titleFormat: 'D MMMM YYYY',
-        columnFormat: 'ddd D',
-        defaultView: settings.view[0],
-        eventColor: '#4caf50',
-        eventClick: function(calEvent, jsEvent, view) {
-
-            alert(calEvent.title);
-        },
-        events: function(start, end, timezone, callback) {
-
-            script.getLog(function(collection){
-
-                callback(collection);
-
-                var calendarView = calendarElement.fullCalendar('getView');
-
-                if(calendarView.type === settings.view[0]){
-
-                    var totals = script.getTotals(calendarView, options.minTime, options.maxTime);
-                    var days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-                    for (var i = 0, l = days.length; i < l; i++){
-
-                        if(totals[i]){
-
-                            $('.fc-day-header.fc-' + days[i]).attr('data-total', totals[i]).addClass('total');
-                        }else{
-
-                            $('.fc-day-header.fc-' + days[i]).removeClass('total');
-                        }
-                    }
-                }
-            });
-        }
+        maxTime : '20:00:00',
+        currentMergeTime: 1 * 60 * 60 * 1000
     };
 
 
@@ -88,49 +39,31 @@ var init = function(){
         '<ul class="actions actions-alt" id="fc-actions">',
             '<li id="viewaction"></li>',
             '<li class="dropdown">',
-                '<a data-toggle="dropdown" href="#" title="Set merge time"><i class="md md-vertical-align-center"></i></a>',
-                '<ul class="dropdown-menu dropdown-menu-right" id="mergetime">',
-                    '<li>',
-                        '<a data-time="' + (0) + '" href="">off</a>',
-                    '</li>',
-                    '<li>',
-                        '<a data-time="' + (5 * 60 * 1000) + '" href="">5 minutes</a>',
-                    '</li>',
-                    '<li>',
-                        '<a data-time="' + (15 * 60 * 1000) + '" href="">15 minutes</a>',
-                    '</li>',
-                    '<li>',
-                        '<a data-time="' + (30 * 60 * 1000) + '" href="">30 minutes</a>',
-                    '</li>',
-                    '<li class="active">',
-                        '<a data-time="' + (1 * 60 * 60 * 1000) + '" href="">1 hour</a>',
-                    '</li>',
-                    '<li>',
-                        '<a data-time="' + (1.5 * 60 * 60 * 1000) + '" href="">1.5 hour</a>',
-                    '</li>',
-                    '<li>',
-                        '<a data-time="' + (2 * 60 * 60 * 1000) + '" href="">2 hours</a>',
-                    '</li>',
-                '</ul>',
-            '</li>',
-            '<li class="dropdown">',
                 '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
                 '<ul class="dropdown-menu dropdown-menu-right">',
                     '<li id="weekendaction"></li>',
                     '<li id="businesshours"></li>',
+                    '<li id="totals"></li>',
                 '</ul>',
             '</li>',
         '</ul>'
     ].join(''));
 
+    var leftMenu = [
+        '<div class="leftmenu" title="Set merge time">',
+            '<input type="text" class="span2 slider" value="">',
+        '<div>'
+    ].join('');
+
     var settingsWeekend = $('<a href="#">' + settings.weekend[0] + '</a>');
     var businessHours = $('<a href="#">' + settings.businessHours[0] + '</a>');
+    var totals = $('<a href="#">' + settings.totals[0] + '</a>');
     var settingsView = $('<a href="#" title="Change Calendar view"><i class="md md-apps"></i></a>');
-    var mergetime = rightMenu.find('#mergetime li a');
 
     rightMenu.find('#viewaction').append(settingsView);
     rightMenu.find('#weekendaction').append(settingsWeekend);
     rightMenu.find('#businesshours').append(businessHours);
+    rightMenu.find('#totals').append(totals);
 
     
     /**
@@ -143,9 +76,13 @@ var init = function(){
         calendarElement.fullCalendar('destroy');
         calendarElement.fullCalendar(options);
 
+        _calendarResizeHandler();
+
         var toolbar = calendarElement.find('.fc-toolbar');
+            toolbar.append(leftMenu);
             toolbar.append(rightMenu);
 
+        /*
         if(windows){
             toolbar.find('#eventmenu').remove();
             toolbar.find('#fc-actions').prepend(_getEventMenu(open));
@@ -167,13 +104,118 @@ var init = function(){
                 renderCalendar(options, true);
             });
         }
+        */
 
-        settingsWeekend.on('click', settingsWeekendClickHandler);
-        settingsView.on('click', settingsViewClickHandler);
-        mergetime.on('click', mergeTimeClickHandler);
-        businessHours.on('click', businessHoursClickHandler);
+        settingsWeekend.on('click', _settingsWeekendClickHandler);
+        settingsView.on('click', _settingsViewClickHandler);
+        businessHours.on('click', _businessHoursClickHandler);
+        totals.on('click', _totalsClickHandler);
+
+
+        var sliderOptions = {
+            'min': 0,
+            'max': 2 * 60 * 60 * 1000,
+            'step': 5 * 60 * 1000,
+            'value': settings.currentMergeTime,
+            'formater': _formatSlideValue
+        };
+
+        $('.slider').slider(sliderOptions)
+            .on('slideStart', _slideStartHandler)
+            .on('slideStop', _slideStopHandler);
     };
 
+
+    /**
+     * @function _calendarResizeHandler
+     * @private
+     */
+    var _calendarResizeHandler = function(view){
+
+        calendarElement.fullCalendar('option', 'contentHeight', window.innerHeight - 137);
+    };
+
+
+    /**
+     * @function _calendarEventClickHandler
+     * @private
+     */
+    var _calendarEventClickHandler = function(calEvent, jsEvent, view) {
+
+        // alert(calEvent.title);
+    };
+
+
+    /**
+     * @function _calendarEventsHandler
+     * @private
+     */
+    var _calendarEventsHandler = function(start, end, timezone, callback) {
+
+        script.getLog(function(collection){
+
+            callback(collection);
+
+            if(settings.showTotals){
+
+                var calendarView = calendarElement.fullCalendar('getView');
+
+                if(calendarView.type === settings.view[0]){
+
+                    var totals = script.getTotals(calendarView, options.minTime, options.maxTime);
+                    var days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+                    for (var i = 0, l = days.length; i < l; i++){
+
+                        if(totals[i]){
+
+                            $('.fc-day-header.fc-' + days[i]).attr('data-total', totals[i]).addClass('total');
+                        }else{
+
+                            $('.fc-day-header.fc-' + days[i]).removeClass('total');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    /**
+     * @function _slideStopHandler
+     * @private
+     */
+    var _slideStopHandler =  function(e){
+
+        $('.slider-handle').removeClass('active');
+
+        settings.currentMergeTime = parseInt(e.value); 
+
+        script.setOptions('mergeTime', settings.currentMergeTime);
+
+        renderCalendar(options);
+    };
+
+    /**
+     * @function _slideStartHandler
+     * @private
+     */
+    var _slideStartHandler =  function(e){
+
+        $('.slider-handle').addClass('active');
+    };
+
+    /**
+     * @function _formatSlideValue
+     * @private
+     */
+    var _formatSlideValue =  function(value){
+
+        var hours = Math.floor(value / ( 1 * 60 * 60 * 1000) % 24),
+            minutes = Math.floor(value / ( 1 * 60 * 1000) % 60)
+
+        return _formatDoubleDigit(hours) + ":" + _formatDoubleDigit(minutes);
+    }
 
     /**
      * @function _getEventMenu
@@ -225,25 +267,19 @@ var init = function(){
 
 
     /**
-     * set event handlers for pmset script
+     * @function _formatDoubleDigit
+     * @private
      */
-     var mergeTimeClickHandler = function(e){
+    var _formatDoubleDigit = function(digit){
 
-        e.preventDefault();
-
-        $('#mergetime li').removeClass('active');
-        $(this).parent().addClass('active');
-        
-        script.setOptions('mergeTime', parseInt($(this).attr('data-time')));
-
-        renderCalendar(options);
-     };
+        return ('0' + digit).slice(-2);
+    };
 
 
     /**
      * set event handlers for pmset script
      */
-     var businessHoursClickHandler = function(e){
+     var _businessHoursClickHandler = function(e){
 
         e.preventDefault();
 
@@ -269,7 +305,7 @@ var init = function(){
     /** 
      * Calendar views click handler
      */
-    var settingsViewClickHandler = function(e){
+    var _settingsViewClickHandler = function(e){
 
         e.preventDefault();
 
@@ -286,7 +322,7 @@ var init = function(){
     /** 
      * Calendar weekends click Handler
      */
-    var settingsWeekendClickHandler = function(e){
+    var _settingsWeekendClickHandler = function(e){
 
         e.preventDefault();
 
@@ -295,6 +331,19 @@ var init = function(){
 
         options.weekends = toggle;
         $(this).text(newWeekend);
+    
+        renderCalendar(options);
+    };
+
+    var _totalsClickHandler = function(e){
+
+        e.preventDefault();
+
+        var toggle = ($(this).text() === settings.totals[0]);
+
+        settings.showTotals = toggle;
+        
+        $(this).text(settings.totals[toggle | 0]);
     
         renderCalendar(options);
     };
@@ -321,7 +370,36 @@ var init = function(){
         mainWindow.showDevTools();
     };
 
+
+    var options = {
+        header: {
+            right: '',
+            center: 'prev, title, next',
+            left: ''
+        },
+        theme: true, 
+        firstDay : 1,
+        weekends : false,
+        allDaySlot : false,
+        axisFormat : 'H:mm',
+        contentHeight: 600,
+        slotDuration : '00:30:00',
+        minTime : settings.minTime,
+        maxTime : settings.maxTime,
+        timezone: 'local',
+        timeFormat: 'H(:mm)',
+        titleFormat: 'D MMMM YYYY',
+        columnFormat: 'ddd D',
+        defaultView: settings.view[0],
+        eventColor: '#4caf50',
+        eventClick: _calendarEventClickHandler,
+        events: _calendarEventsHandler,
+        windowResize: _calendarResizeHandler
+    };
+
     renderCalendar(options);
+
+    $('.slider').on('slideStop', _slideStopHandler);
 
     $('#closeapp').on('click', closeappClickHandler);
     $('[data-action="devtools"]').on('click', menuClickHandler);
