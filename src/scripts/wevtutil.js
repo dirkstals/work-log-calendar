@@ -389,12 +389,73 @@ var Wevtutil = (function(){
     };
 
 
+
+    /**
+     * @function getTotals
+     * @public
+     */
+    var getTotals = function(view, minTime, maxTime){
+
+        var totals = [];
+
+        if(minTime && maxTime){
+            minTime = minTime.split(':');
+            maxTime = maxTime.split(':');
+        }
+        
+        /**
+         * merge start- and endevents together day by day
+         */
+        for (var i = 0, l = eventArray.length; i < l; i++){
+
+            if((startEvent = eventArray[i]) && 
+                (endEvent = eventArray[i + 1]) &&
+                startEvent.event === 'on' &&
+                endEvent.event === 'off' && 
+                startEvent.date >= view.start.toDate() &&
+                startEvent.date <= view.end.toDate() &&
+                startEvent.date.getDay() === endEvent.date.getDay()){
+
+
+                if(minTime && maxTime){
+
+                    var minHour = new Date(0, 0, 0, minTime[0], minTime[1], minTime[2]),
+                        maxHour = new Date(0, 0, 0, maxTime[0], maxTime[1], maxTime[2]),
+                        startHour = new Date(0, 0, 0, startEvent.date.getHours(), startEvent.date.getMinutes(), startEvent.date.getSeconds()),
+                        endHour = new Date(0, 0, 0, endEvent.date.getHours(), endEvent.date.getMinutes(), endEvent.date.getSeconds());
+                    
+                    if(startHour > maxHour || endHour < minHour){
+                        
+                        continue;
+                    }                    
+                }
+
+                totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + (endEvent.date - startEvent.date);
+            }
+        }
+
+        for (var i = 0, l = totals.length; i < l; i++){
+
+            if(totals[i]){
+
+                var hours = Math.floor(totals[i] / (1 * 60 * 60 * 1000) % 24),
+                    minutes = Math.floor(totals[i] / ( 1 * 60 * 1000) % 60);
+
+                totals[i] = _formatDoubleDigit(hours) + ":" + _formatDoubleDigit(minutes);
+            }
+        }
+
+        return totals;
+    };
+
+
     return {
         getLog: getLog,
         setOptions: setOptions,
         setActiveEvents: setActiveEvents,
         getActiveEvents: getActiveEvents,
-        getEvents: getEvents
+        getEvents: getEvents,
+        getTotals: getTotals 
     }
 })();
 
