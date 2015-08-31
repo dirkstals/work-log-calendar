@@ -11,6 +11,7 @@ require('./scripts/bootstrap-slider');
 
 var windows = process.platform === 'win32';
 var gui = require('nw.gui');
+var notifier = require('node-notifier');
 var script = windows ? require('./scripts/wevtutil') : require('./scripts/pmset');
 
 
@@ -28,9 +29,10 @@ var init = function(){
         businessHours : ['Day hours', 'Business hours'],
         totals : ['Show totals', 'Hide totals'],
         showTotals: 0,
-        minTime : '06:00:00',
-        maxTime : '20:00:00',
-        currentMergeTime: 1 * 60 * 60 * 1000
+        minTime : 6 * 60 * 60 * 1000,
+        maxTime : 20 * 60 * 60 * 1000,
+        currentMergeTime: 1 * 60 * 60 * 1000,
+        alarm : 8 * 60 * 60 * 1000
     };
 
 
@@ -169,7 +171,7 @@ var init = function(){
 
                         if(totals[i]){
 
-                            $('.fc-day-header.fc-' + days[i]).attr('data-total', totals[i]).addClass('total');
+                            $('.fc-day-header.fc-' + days[i]).attr('data-total', _formatSlideValue(totals[i])).addClass('total');
                         }else{
 
                             $('.fc-day-header.fc-' + days[i]).removeClass('total');
@@ -204,6 +206,7 @@ var init = function(){
 
         $('.slider-handle').addClass('active');
     };
+
 
     /**
      * @function _formatSlideValue
@@ -403,6 +406,83 @@ var init = function(){
 
     $('#closeapp').on('click', closeappClickHandler);
     $('[data-action="devtools"]').on('click', menuClickHandler);
+
+    /**
+     * @function _checkForAlarm
+     * @private
+     */
+    var _checkForAlarmHeartbeat = function(){
+
+        var todaysTotals = script.getTodaysTotal(options.minTime, options.maxTime),
+            minutesToGo = Math.round((settings.alarm - todaysTotals) / (60 * 1000)),
+            message;
+
+        console.log(settings.alarm, todaysTotals, minutesToGo);
+
+        switch(minutesToGo){
+
+            case ((settings.alarm / (60 * 1000)) / 2):
+
+                message = 'Woooow, We\'re Half way there!';
+                break;
+
+            case 60:
+
+                message = '1 hour left';
+                break;
+
+            case 30:
+
+                message = 'half an hour left';
+                break;
+                
+            case 20:
+
+                message = 'Time to go after 20 minutes';
+                break;
+
+            case 15:
+
+                message = 'Time to go after 15 minutes';
+                break;
+
+            case 10:
+
+                message = 'Time to go after 10 minutes';
+                break;
+
+            case 5:
+
+                message = 'Time to go after 5 minutes';
+                break;
+
+            case 0:
+
+                message = 'Get to the choppa!';
+                break;
+        }
+
+        if(message){
+
+            notifier.notify({
+                'title': 'Work Log Calendar',
+                'message': message,
+                'wait': true
+            }, function (err, data) {
+
+                console.log('Waited');
+                console.log(err, data);
+            })
+            .on('click', function () {
+                
+                console.log(arguments);
+            });    
+        }
+
+        setTimeout(_checkForAlarmHeartbeat, 1 * 60 * 1000);
+    };
+
+    _checkForAlarmHeartbeat();
 };
 
 

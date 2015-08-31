@@ -20,7 +20,7 @@ module.exports = (function(window, undefined){
      * @private
      */
     var trayMenuOpenClickHandler = function(){
-
+        
         mainWindow.show();
         mainWindow.focus();
         mainWindow.setShowInTaskbar(true);
@@ -33,12 +33,8 @@ module.exports = (function(window, undefined){
      */
     var windowCloseHandler = function(){
         
-        // Hide the window to give user the feeling of closing immediately
-        this.hide();
-
-        // After closing the new window, close the main window.
-        this.setShowInTaskbar(false);
-        this.close(true);
+        mainWindow.hide();
+        mainWindow.setShowInTaskbar(false);
     };
 
 
@@ -53,7 +49,7 @@ module.exports = (function(window, undefined){
      */
     var trayMenu = new gui.Menu();
     var trayMenuOpen = new gui.MenuItem({ label: 'Open' });
-    var trayMenuClose = new gui.MenuItem({ label: 'Close' });
+    var trayMenuClose = new gui.MenuItem({ label: 'Quit WorkLogCalendar'});
 
 
     /**
@@ -82,8 +78,12 @@ module.exports = (function(window, undefined){
     var nativeMenuBar = new gui.Menu({ type: "menubar" });
 
     if(!windows){ 
+
+        var menuItems = new gui.Menu();
+            menuItems.append(new gui.MenuItem({ label: 'Close', click: windowCloseHandler, key : 'w'}));
         
         nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true}); 
+        nativeMenuBar.append(new gui.MenuItem({label: 'File', submenu: menuItems}));
     }
 
     /**

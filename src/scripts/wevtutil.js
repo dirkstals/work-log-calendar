@@ -389,59 +389,61 @@ var Wevtutil = (function(){
     };
 
 
-
     /**
      * @function getTotals
      * @public
      */
     var getTotals = function(view, minTime, maxTime){
 
+        return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime);
+    };
+
+
+    /**
+     * @function getTodaysTotal
+     * @public
+     */
+    var getTodaysTotal = function(minTime, maxTime){
+
+        var today = new Date();
+
+        return _getSpecificTotals(today.setHours(0,0,0,0), today.setHours(23,59,59,999), minTime, maxTime)[today.getDay()] || 0;
+    };
+
+    /**
+     * @function _getSpecificTotals
+     * @private
+     */
+    var _getSpecificTotals = function(startDate, endDate, minTime, maxTime){
+
         var totals = [];
 
-        if(minTime && maxTime){
-            minTime = minTime.split(':');
-            maxTime = maxTime.split(':');
-        }
-        
-        /**
-         * merge start- and endevents together day by day
-         */
         for (var i = 0, l = eventArray.length; i < l; i++){
 
-            if((startEvent = eventArray[i]) && 
-                (endEvent = eventArray[i + 1]) &&
-                startEvent.event === 'on' &&
-                endEvent.event === 'off' && 
-                startEvent.date >= view.start.toDate() &&
-                startEvent.date <= view.end.toDate() &&
+            if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
+                startEvent.event === 'on' && endEvent.event === 'off' && 
+                startEvent.date >= startDate && startEvent.date <= endDate &&
                 startEvent.date.getDay() === endEvent.date.getDay()){
-
 
                 if(minTime && maxTime){
 
-                    var minHour = new Date(0, 0, 0, minTime[0], minTime[1], minTime[2]),
-                        maxHour = new Date(0, 0, 0, maxTime[0], maxTime[1], maxTime[2]),
-                        startHour = new Date(0, 0, 0, startEvent.date.getHours(), startEvent.date.getMinutes(), startEvent.date.getSeconds()),
-                        endHour = new Date(0, 0, 0, endEvent.date.getHours(), endEvent.date.getMinutes(), endEvent.date.getSeconds());
-                    
-                    if(startHour > maxHour || endHour < minHour){
+                    var startHour = 
+                        (startEvent.date.getHours() * 60 * 60 * 1000) + 
+                        (startEvent.date.getMinutes() * 60 * 1000) + 
+                        (startEvent.date.getSeconds() * 1000);
+
+                    var endHour = 
+                        (endEvent.date.getHours() * 60 * 60 * 1000) + 
+                        (endEvent.date.getMinutes() * 60 * 1000) + 
+                        (endEvent.date.getSeconds() * 1000);
+
+                    if(startHour > maxTime || endHour < minTime){
                         
                         continue;
                     }                    
                 }
 
-                totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + (endEvent.date - startEvent.date);
-            }
-        }
-
-        for (var i = 0, l = totals.length; i < l; i++){
-
-            if(totals[i]){
-
-                var hours = Math.floor(totals[i] / (1 * 60 * 60 * 1000) % 24),
-                    minutes = Math.floor(totals[i] / ( 1 * 60 * 1000) % 60);
-
-                totals[i] = _formatDoubleDigit(hours) + ":" + _formatDoubleDigit(minutes);
+                totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + ((endEvent.log === 'added' ? new Date() : endEvent.date) - startEvent.date);
             }
         }
 
@@ -455,7 +457,8 @@ var Wevtutil = (function(){
         setActiveEvents: setActiveEvents,
         getActiveEvents: getActiveEvents,
         getEvents: getEvents,
-        getTotals: getTotals 
+        getTotals: getTotals,
+        getTodaysTotal: getTodaysTotal
     }
 })();
 
