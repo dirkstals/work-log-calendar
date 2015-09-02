@@ -1,19 +1,14 @@
-var spawn = require('child_process').spawn;
-var fs = require('fs');
-var syslog = require('./syslog.js');
+var Shell = require('./shell');
+var config = require('./config');
 
 var Pmset = (function(){
 
     var eventArray, 
-        pmset, 
         previousCallbackTime, 
-        previousCollection, 
-        pmsetData;
+        previousEventArray;
 
-    var options = {
-        mergeTime : 1 * 60 * 60 * 1000, // 1 hour
-        cacheTime : 1 * 60 * 60 * 1000 // 1 hour
-    };
+    var systemScriptOptions = config.settings.windows ? config.settings.wevtutilSystemOptions : config.settings.pmsetOptions,
+        securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.syslogOptions;
 
 
     /**
@@ -24,10 +19,9 @@ var Pmset = (function(){
 
         var timePassed = Date.now() - previousCallbackTime;
 
-        if(timePassed > options.cacheTime || isNaN(timePassed)){
+        if(timePassed > config.settings.cacheTime || isNaN(timePassed)){
 
             eventArray = [];
-            pmsetData = [];
 
             _executeScript(callback);
         }else{
@@ -45,101 +39,38 @@ var Pmset = (function(){
      */
     var _executeScript = function(callback){
 
+
         /**
-         * @function _pmsetCloseHandler
+         * @function _securityScriptCallback
          * @private
          */
-        var _pmsetCloseHandler = function (code) {
+        var _securityScriptCallback = function (eventList) {
 
-            if (code !== 0) {
-                console.log('pmset process exited with code ' + code);
-                return;
-            }
+            eventArray = eventArray.concat(eventList);
 
-            var str = pmsetData.join(''),
-                pattern = /^(\d+\-\d+\-\d+\s*\d+\:\d+\:\d+\s*[\+|\-]\d+)\s.*(Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim;
-
-            while ((match = pattern.exec(str))) {
-                
-                var eventType = ({'on':'on','off':'off','Sleep':'off','Open':'on','started':'on'})[match[3]];
-                var logType = ({'on':'display','off':'display','Sleep':'Clamshell sleep','Open':'Lid Open','started':'processd'})[match[3]];
-                
-                eventArray.push({
-                    "date" : new Date(match[1]),
-                    "event": eventType,
-                    "log" : logType
-                });
-            }
+            _sortEventArray();
+            _checkProcessdHappensOnlyAfterSyslog();
+            _removeDoubles();
 
             previousCallbackTime = new Date();
-            
-            syslog.getLog(function(data){
+            previousEventArray = eventArray.slice(0);
 
-                _mergeSyslogAndPmset(data);
-
-                _sortEventArray();
-                _checkProcessdHappensOnlyAfterSyslog();
-                _removeDoubles();
-
-                previousEventArray = eventArray.slice(0);
-
-                _startParsing(callback);
-            })
+            _startParsing(callback);
         };
 
+
         /**
-         * execute the script pmset
-         * set event handlers for pmset script
+         * @function _script
+         * @private
          */
-        pmset = spawn('pmset', ['-g', 'log']);
-        pmset.stdout.setEncoding('utf8');
-        pmset.stdout.on('data', _pmsetOutHandler);
-        pmset.stderr.on('data', _pmsetErrorHandler);
-        pmset.on('close', _pmsetCloseHandler);
-    };
+        var _systemScriptCallback = function (eventList) {
 
+            eventArray = eventArray.concat(eventList);
 
-    /**
-     * @function _mergeSyslogAndPmset
-     * @private
-     */
-    var _mergeSyslogAndPmset = function(data){
+            Shell.getEvents(securityScriptOptions, _securityScriptCallback);
+        };
 
-        var j = data.length;
-
-        while (j--) {
-            
-            var syslogDate = new Date(data[j].date),
-                syslogMonth = syslogDate.getMonth(),
-                syslogDay = syslogDate.getDate(),
-                included = false;
-
-            var i = eventArray.length;
-
-            while (i--){
-            
-                var pmsetDate = new Date(eventArray[i].date),
-                    pmsetMonth = pmsetDate.getMonth(),
-                    pmsetDay = pmsetDate.getDate();
-
-                if(pmsetMonth === syslogMonth && pmsetDay === syslogDay){
-
-                    syslogDate.setFullYear(pmsetDate.getFullYear());
-                    data[j].date = syslogDate;
-                    included = true;
-                    break;
-                }
-
-                included = false;
-            }
-
-            if(!included){
-
-                data.splice(j,1);
-            }
-        }
-
-        eventArray = data.concat(eventArray);
+        Shell.getEvents(systemScriptOptions, _systemScriptCallback);
     };
 
     
@@ -180,35 +111,6 @@ var Pmset = (function(){
 
 
     /**
-     * @function _formatDoubleDigit
-     * @private
-     */
-    var _formatDoubleDigit = function(digit){
-
-        return ('0' + digit).slice(-2);
-    };
-
-
-    /**
-     * @function _pmsetOutHandler
-     * @private
-     */
-    var _pmsetOutHandler = function (data) {
-        pmsetData.push(data);
-    };
-
-
-    /**
-     * @function _pmsetCloseHandler
-     * @private
-     */
-    var _pmsetErrorHandler = function (data) {
-
-        console.log('pmset stderr: ' + data);
-    };
-
-
-    /**
      * @function _addCurrentTime
      * @private
      */
@@ -237,16 +139,11 @@ var Pmset = (function(){
          */
         for (var i = 0, l = eventArray.length; i < l; i++){
 
-            if((startEvent = eventArray[i]) && 
-                (endEvent = eventArray[i + 1]) &&
-                startEvent.event === 'on' &&
-                endEvent.event === 'off'){
+            if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
+                startEvent.event === 'on' && endEvent.event === 'off'){
 
-                var hours = Math.floor((endEvent.date - startEvent.date) / (1 * 60 * 60 * 1000) % 24),
-                    minutes = Math.floor((endEvent.date - startEvent.date) / ( 1 * 60 * 1000) % 60);
-                
                 collection.push({
-                    "title" : _formatDoubleDigit(hours) + ":" + _formatDoubleDigit(minutes),
+                    "title" : config.helpers.milliSecondsToTimeString(endEvent.date - startEvent.date),
                     "start": startEvent.date.toJSON(),
                     "end": endEvent.date.toJSON()
                 });
@@ -311,7 +208,7 @@ var Pmset = (function(){
                 
                 if (previousEvent.event === 'off' && currentEvent.event === 'on'){
                     
-                    if ((currentEvent.date - previousEvent.date) < options.mergeTime){
+                    if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
 
                         eventArray.splice(i-1, 2);
                         i--;
@@ -365,7 +262,7 @@ var Pmset = (function(){
      */
     var setOptions = function(key, value){
 
-        options[key] = value;
+        config.settings[key] = value;
     };
 
 
@@ -433,8 +330,8 @@ var Pmset = (function(){
 
 
     return {
-        getLog : getLog,
-        setOptions : setOptions,
+        getLog: getLog,
+        setOptions: setOptions,
         getTotals: getTotals,
         getTodaysTotal: getTodaysTotal        
     }
