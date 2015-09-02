@@ -1,5 +1,7 @@
 var Shell = require('./shell');
 var config = require('./config');
+var helpers = require('./helpers');
+
 
 var Pmset = (function(){
 
@@ -143,7 +145,7 @@ var Pmset = (function(){
                 startEvent.event === 'on' && endEvent.event === 'off'){
 
                 collection.push({
-                    "title" : config.helpers.milliSecondsToTimeString(endEvent.date - startEvent.date),
+                    "title" : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date),
                     "start": startEvent.date.toJSON(),
                     "end": endEvent.date.toJSON()
                 });

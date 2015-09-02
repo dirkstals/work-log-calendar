@@ -13,6 +13,8 @@ var gui = require('nw.gui');
 var notifier = require('node-notifier');
 var script = require('./scripts/convert');
 var config = require('./scripts/config');
+var helpers = require('./scripts/helpers');
+var templates = require('./scripts/templates');
 
 
 /**
@@ -27,9 +29,9 @@ var init = function(){
 
 
     //Create and add Action button with dropdown in Calendar header. 
-    var rightMenu = $(config.templates.menuRight);
+    var rightMenu = $(templates.menuRight);
 
-    var leftMenu = config.templates.menuLeft;
+    var leftMenu = templates.menuLeft;
 
     var settingsWeekend = $(`<a href="#">${settings.weekend[0]}</a>`);
     var businessHours = $(`<a href="#">${settings.businessHours[0]}</a>`);
@@ -114,7 +116,7 @@ var init = function(){
 
                         if(totals[i]){
 
-                            $('.fc-day-header.fc-' + settings.days[i]).attr('data-total', config.helpers.milliSecondsToTimeString(totals[i])).addClass('total');
+                            $('.fc-day-header.fc-' + settings.days[i]).attr('data-total', helpers.milliSecondsToTimeString(totals[i])).addClass('total');
                         }else{
 
                             $('.fc-day-header.fc-' + settings.days[i]).removeClass('total');
@@ -164,11 +166,11 @@ var init = function(){
 
             if (events.hasOwnProperty(eventID)) {
 
-                eventList.push(config.templates.eventListItem(eventID, events[eventID]));
+                eventList.push(templates.eventListItem(eventID, events[eventID]));
             }
         }
 
-        return $(config.templates.eventList(open ? 'open' : '', eventList.join('')));
+        return $(templates.eventList(open ? 'open' : '', eventList.join('')));
     };
 
 

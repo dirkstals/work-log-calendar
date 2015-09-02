@@ -1,28 +1,6 @@
+var helpers = require('./helpers');
 
 var Config = (function(){
-
-
-    /**
-     * @function milliSecondsToTimeString
-     * @public
-     */
-    var milliSecondsToTimeString =  function(value){
-
-        var hours = Math.floor(value / ( 1 * 60 * 60 * 1000) % 24),
-            minutes = Math.floor(value / ( 1 * 60 * 1000) % 60)
-
-        return _formatDoubleDigit(hours) + ":" + _formatDoubleDigit(minutes);
-    }
-
-
-    /**
-     * @function _formatDoubleDigit
-     * @private
-     */
-    var _formatDoubleDigit = function(digit){
-
-        return ('0' + digit).slice(-2);
-    };
 
 
     /**
@@ -46,11 +24,30 @@ var Config = (function(){
             'min': 0,
             'max': 2 * 60 * 60 * 1000,
             'step': 5 * 60 * 1000,
-            'formater': milliSecondsToTimeString
+            'formater': helpers.milliSecondsToTimeString
         },
         notification: {
             'title': 'Work Log Calendar',
             'wait': true
+        },
+        calendar: {
+            header: {
+                right: '',
+                center: 'prev, title, next',
+                left: ''
+            },
+            theme: true, 
+            firstDay : 1,
+            weekends : false,
+            allDaySlot : false,
+            axisFormat : 'H:mm',
+            contentHeight: 600,
+            slotDuration : '00:30:00',
+            timezone: 'local',
+            timeFormat: 'H(:mm)',
+            titleFormat: 'D MMMM YYYY',
+            columnFormat: 'ddd D',
+            eventColor: '#4caf50'
         },
         pmsetOptions: {
             pattern: /^(\d+)\-(\d+)\-(\d+)\s*(\d+)\:(\d+)\:(\d+)\s*[\+|\-]\d+\s.*(?:Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim,
@@ -201,103 +198,24 @@ var Config = (function(){
         }
     };
 
+    /**
+     * Settings based patterns
+     */
     settings.wevtutilSecurityOptions.pattern = new RegExp('(\\d{4})\\-(\\d{2})\\-(\\d{2})T(\\d{2})\\:(\\d{2})\\:(\\d{2}).\\d{3}\\s+.*:\\s+(' + Object.keys(settings.wevtutilSecurityOptions.events).join('|') + ')','gim');
     settings.wevtutilSystemOptions.pattern = new RegExp('(\\d{4})\\-(\\d{2})\\-(\\d{2})T(\\d{2})\\:(\\d{2})\\:(\\d{2}).\\d{3}\\s+.*:\\s+(' + Object.keys(settings.wevtutilSystemOptions.events).join('|') + ')','gim');
 
 
 
     /**
-     * Specific Calendar options
+     * Settings based Calendar options
      */
-    settings.calendar = {
-        header: {
-            right: '',
-            center: 'prev, title, next',
-            left: ''
-        },
-        theme: true, 
-        firstDay : 1,
-        weekends : false,
-        allDaySlot : false,
-        axisFormat : 'H:mm',
-        contentHeight: 600,
-        slotDuration : '00:30:00',
-        timezone: 'local',
-        timeFormat: 'H(:mm)',
-        titleFormat: 'D MMMM YYYY',
-        columnFormat: 'ddd D',
-        eventColor: '#4caf50',
-        minTime: settings.minTime,
-        maxTime: settings.maxTime,
-        defaultView: settings.view[0]
-    };
+    settings.calendar.minTime = settings.minTime;
+    settings.calendar.maxTime = settings.maxTime;
+    settings.calendar.defaultView = settings.view[0];
 
 
     /**
-     * HTML templates
-     */
-    var templates = {
-        menuRight: 
-            [
-                '<ul class="actions actions-alt" id="fc-actions">',
-                    '<li id="viewaction"></li>',
-                    '<li class="dropdown">',
-                        '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
-                        '<ul class="dropdown-menu dropdown-menu-right">',
-                            '<li id="weekendaction"></li>',
-                            '<li id="businesshours"></li>',
-                            '<li id="totals"></li>',
-                        '</ul>',
-                    '</li>',
-                '</ul>'
-            ].join(''),
-        menuLeft: 
-            [
-                '<div class="leftmenu" title="Set merge time">',
-                    '<input type="text" class="span2 slider" value="">',
-                '<div>'
-            ].join(''),
-        eventListItem: function()
-            {
-                return [    
-                    '<div class="lv-item media">',
-                        '<div class="checkbox pull-left">',
-                            '<label>',
-                                `<input type="checkbox" name="events" value="${arguments[0]}">`,
-                                '<i class="input-helper"></i>',
-                            '</label>',
-                        '</div>',
-                        '<div class="media-body">',
-                            `<div class="lv-title">${arguments[0]}</div>`,
-                            `<small class="lv-small">${arguments[1]}</small>`,
-                        '</div>',
-                    '</div>',
-                ].join('');
-            },
-        eventList: function()
-            {
-                [
-                    `<li class="dropdown ${arguments[0]}" dropdown id="eventmenu">`,
-                        '<a data-toggle="dropdown" title="Filter events" dropdown-toggle href="#" aria-haspopup="true" aria-expanded="false">',
-                            '<i class="md md-list"></i>',
-                        '</a>',
-                        '<div class="dropdown-menu dropdown-menu-lg pull-right">',
-                            '<div class="listview">',
-                                '<div class="lv-header">Events</div>',
-                                '<form class="lv-body" id="eventform">',
-                                    arguments[1],
-                                '</form>',
-                                '<div class="clearfix"></div>',
-                            '</div>',
-                        '</div>',
-                    '</li>'
-                ].join('')
-            }
-    };
-
-
-    /**
-     * messages
+     * Messages
      */
     var messages = {
         half: 'Woooow, We\'re Half way there!',
@@ -307,18 +225,8 @@ var Config = (function(){
     };
 
 
-    /**
-     * helper functions
-     */
-    var helpers = {
-        milliSecondsToTimeString : milliSecondsToTimeString
-    };
-
-
     return {
         settings: settings,
-        templates: templates,
-        helpers: helpers,
         messages: messages
     };
 
