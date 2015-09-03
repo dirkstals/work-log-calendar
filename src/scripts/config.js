@@ -44,7 +44,7 @@ var Config = (function(){
             contentHeight: 600,
             slotDuration : '00:30:00',
             timezone: 'local',
-            timeFormat: 'H(:mm)',
+            timeFormat: 'H:mm',
             titleFormat: 'D MMMM YYYY',
             columnFormat: 'ddd D',
             eventColor: '#4caf50'

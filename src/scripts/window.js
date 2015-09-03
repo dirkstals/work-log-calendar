@@ -1,4 +1,5 @@
-module.exports = (function(window, undefined){
+
+var Window = (function(window, undefined){
 
     var gui = window.require('nw.gui');
     var windows = process.platform === 'win32';
@@ -94,3 +95,5 @@ module.exports = (function(window, undefined){
     mainWindow.focus();
 
 })(window);
+
+module.exports = Window;
