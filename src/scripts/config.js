@@ -1,4 +1,5 @@
 var helpers = require('./helpers');
+var path = require('path');
 
 
 /**
@@ -26,7 +27,9 @@ var settings = {
     },
     notification: {
         'title': 'Work Log Calendar',
-        'wait': true
+        'wait': true,
+        'sound': 'Glass',
+        'icon': path.join(__dirname, '..', 'images', 'icon-192.png')
     },
     notificationHeartbeat: 1 * 60 * 1000,
     calendar: {
@@ -217,8 +220,7 @@ settings.calendar.defaultView = settings.view[0];
  * Messages
  */
 var messages = {
-    half: 'Woooow, We\'re Half way there!',
-    hour: '1 hour left',
+    half: 'whooaa we\'re halfway there!',
     minutes: function(){ return `Time to go after ${arguments[0]} minutes`;},
     end: 'Get to the choppa!'
 };

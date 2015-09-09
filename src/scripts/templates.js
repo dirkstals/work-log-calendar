@@ -5,62 +5,37 @@ var helpers = require('./helpers');
  * HTML templates
  */
 var templates = {
-    menuRight: 
-        [
-            '<ul class="actions actions-alt" id="fc-actions">',
-                '<li id="viewaction"></li>',
-                '<li class="dropdown">',
-                    '<a data-toggle="dropdown" href="#" title="Settings"><i class="md md-settings"></i></a>',
-                    '<ul class="dropdown-menu dropdown-menu-right">',
-                        '<li id="weekendaction"></li>',
-                        '<li id="businesshours"></li>',
-                        '<li id="totals"></li>',
-                    '</ul>',
-                '</li>',
-            '</ul>'
-        ].join(''),
-    menuLeft: 
-        [
-            '<div class="leftmenu" title="Set merge time">',
-                '<input type="text" class="span2 slider" value="">',
-            '<div>'
-        ].join(''),
-    eventListItem: function()
-        {
-            return [    
-                '<div class="lv-item media">',
-                    '<div class="checkbox pull-left">',
-                        '<label>',
-                            `<input type="checkbox" name="events" value="${arguments[0]}">`,
-                            '<i class="input-helper"></i>',
-                        '</label>',
-                    '</div>',
-                    '<div class="media-body">',
-                        `<div class="lv-title">${arguments[0]}</div>`,
-                        `<small class="lv-small">${arguments[1]}</small>`,
-                    '</div>',
+    menuRight: function(){
+        return [    
+            '<div class="rightmenu">',
+                '<button id="menu-view" class="mdl-button mdl-js-button mdl-button--icon">',
+                    '<i class="material-icons md-18">apps</i>',
+                '</button>',
+
+                '<button id="menu-settings" class="mdl-button mdl-js-button mdl-button--icon">',
+                    '<i class="material-icons md-18">settings</i>',
+                '</button>',
+                
+                '<ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="menu-settings">',
+                    `<li class="mdl-menu__item" id="menu-settings-weekend">${arguments[0]}</li>`,
+                    `<li class="mdl-menu__item" id="menu-settings-businesshours">${arguments[1]}</li>`,
+                    `<li class="mdl-menu__item" id="menu-settings-totals">${arguments[2]}</li>`,
+                '</ul>',
+            '</div>'
+        ].join('');
+    },
+    menuLeft: function(){
+        return [    
+            '<div class="leftmenu">',
+                '<p style="width:220px;">',
+                    `<input id="mergetime" class="mdl-slider mdl-js-slider" type="range" min="0" max="72" value="${arguments[0]}" step="3" tabindex="0"/>`,
+                '</p>',
+                '<div class="mdl-tooltip" for="mergetime">',
+                    'Set merge time',
                 '</div>',
-            ].join('');
-        },
-    eventList: function()
-        {
-            [
-                `<li class="dropdown ${arguments[0]}" dropdown id="eventmenu">`,
-                    '<a data-toggle="dropdown" title="Filter events" dropdown-toggle href="#" aria-haspopup="true" aria-expanded="false">',
-                        '<i class="md md-list"></i>',
-                    '</a>',
-                    '<div class="dropdown-menu dropdown-menu-lg pull-right">',
-                        '<div class="listview">',
-                            '<div class="lv-header">Events</div>',
-                            '<form class="lv-body" id="eventform">',
-                                arguments[1],
-                            '</form>',
-                            '<div class="clearfix"></div>',
-                        '</div>',
-                    '</div>',
-                '</li>'
-            ].join('')
-        }
+            '<div>'
+        ].join('');
+    }
 };
 
 module.exports = templates;

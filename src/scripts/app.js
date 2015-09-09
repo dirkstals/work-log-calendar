@@ -1,17 +1,13 @@
-$ = require('jquery');
+var $ = require('jquery');
 
 global.document = window.document;
 global.jQuery = window.$;
 
-require('bootstrap');
-require('moment');
-require('fullcalendar');
-require('./scripts/bootstrap-slider');
-require('./scripts/calendar');
 
 var gui = require('nw.gui');
 var notification = require('./scripts/notification');
 var menu = require('./scripts/menu');
+var calendar = require('./scripts/calendar');
 
 
 /**
@@ -24,6 +20,9 @@ var init = function(){
      */
     $('#closeapp').on('click', menu.close);
     $('[data-action="devtools"]').on('click', menu.devtools);
+
+
+    calendar.init();
 
 
     /**

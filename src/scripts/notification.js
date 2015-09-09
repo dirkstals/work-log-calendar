@@ -41,15 +41,7 @@ var heartbeat = function(){
 
             message = config.messages.half;
             break;
-        case 60:
-
-            message = config.messages.hour;
-            break;
-        case 30:
-        case 20:
-        case 15:
-        case 10:
-        case 5:
+        case 60: case 30: case 20: case 15: case 10: case 5:
 
             message = config.messages.minutes(minutesToGo);
             break;
@@ -58,7 +50,7 @@ var heartbeat = function(){
             message = config.messages.end;
             break;
     }
-
+    
     if(message){
 
         config.settings.notification.message = message;

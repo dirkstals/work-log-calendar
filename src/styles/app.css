@@ -1,4 +1,58 @@
 
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Material Icons'),
+       local('MaterialIcons-Regular'),
+       url(../fonts/MaterialIcons/MaterialIcons-Regular.woff2) format('woff2');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* Preferred icon size */
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-icons.md-18 { font-size: 18px; }
+.material-icons.md-24 { font-size: 24px; }
+.material-icons.md-36 { font-size: 36px; }
+.material-icons.md-48 { font-size: 48px; }
+
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.mdl-layout__header-row{
+    padding-left: 26px;
+}
+
+
+.leftmenu{
+    position: absolute;
+    left: 0px;
+    padding: 8px 0;
+}
+
+.rightmenu{
+    position: absolute;
+    right: 16px;
+}
+
+
+
 html, body {
   overflow: hidden;
   height: 100%;
@@ -49,50 +103,18 @@ header ul li a{
     padding: 6px;
 }
 
-.leftmenu{
-    position: absolute;
-    left: 30px;
-    z-index: 10;
-    top: 31px;
-}
-
-.slider-track{
-    -webkit-border-radius: 0;
-    border-radius: 0;
-    height: 3px !important;
-}
-
-.slider-track .slider-selection{
-    -webkit-border-radius: 0;
-    border-radius: 0;
-    background: #2196f3;
-    box-shadow: none;
-}
-
-.slider-track .slider-handle.round{
-    background: #2196f3;
-    width: 19px;
-    height: 19px;
-    border: 0;
-    border-radius: 100%;
-    top: -8px;
-    margin-top: 0;
-    margin-left: -10px;   
-    box-shadow: none;
-    -webkit-transition: box-shadow;
-    -o-transition: box-shadow;
-    transition: box-shadow;
-    -webkit-transition-duration: 200ms;
-    transition-duration: 200ms;
-    cursor: pointer;
-    position: relative;
-    opacity: 1;
-}
-.slider-track .slider-handle.round.active{
-    box-shadow: 0 0 0 13px rgba(0,0,0,0.1);
-}
 
 
-.tooltip.top{
-    margin-top: -8px;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+

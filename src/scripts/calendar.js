@@ -5,6 +5,19 @@ var config = require('./config');
 var helpers = require('./helpers');
 var templates = require('./templates');
 
+require('moment');
+require('fullcalendar');
+
+
+var calendarElement,
+    settings,
+    rightMenu,
+    leftMenu,
+    settingsWeekend,
+    businessHours,
+    totals,
+    settingsView;
+
 
 /**
  * Render the Calendar
@@ -18,21 +31,16 @@ var renderCalendar = function(options, open){
 
     _calendarResizeHandler();
 
-    var toolbar = calendarElement.find('.fc-toolbar');
-        toolbar.append(leftMenu);
-        toolbar.append(rightMenu);
+    calendarElement.find('.fc-left').append(leftMenu);
+    calendarElement.find('.fc-right').append(rightMenu);
 
-
-    settingsWeekend.on('click', _settingsWeekendClickHandler);
-    settingsView.on('click', _settingsViewClickHandler);
-    businessHours.on('click', _businessHoursClickHandler);
-    totals.on('click', _totalsClickHandler);
+    leftMenu.querySelector('#mergetime').value = settings.currentMergeTime / 100000;
 
     config.settings.sliderOptions.value = settings.currentMergeTime;
 
-    $('.slider').slider(config.settings.sliderOptions)
-        .on('slideStart', _slideStartHandler)
-        .on('slideStop', _slideStopHandler);
+    rightMenu.querySelector('#menu-settings-weekend').textContent = settings.weekend[options.weekends | 0];
+    rightMenu.querySelector('#menu-settings-businesshours').textContent = settings.businessHours[(options.minTime) ? 1 : 0];
+    rightMenu.querySelector('#menu-settings-totals').textContent = settings.totals[settings.showTotals | 0];
 };
 
 
@@ -42,7 +50,7 @@ var renderCalendar = function(options, open){
  */
 var _calendarResizeHandler = function(view){
 
-    calendarElement.fullCalendar('option', 'contentHeight', window.innerHeight - 137);
+    calendarElement.fullCalendar('option', 'contentHeight', window.innerHeight - 110);
 };
 
 
@@ -91,32 +99,6 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 
 
 /**
- * @function _slideStartHandler
- * @private
- */
-var _slideStartHandler =  function(e){
-
-    $('.slider-handle').addClass('active');
-};
-
-
-/**
- * @function _slideStopHandler
- * @private
- */
-var _slideStopHandler =  function(e){
-
-    $('.slider-handle').removeClass('active');
-
-    settings.currentMergeTime = parseInt(e.value); 
-
-    script.setOptions('mergeTime', settings.currentMergeTime);
-
-    refreshCalendar();
-};
-
-
-/**
  * set event handlers for script
  */
  var _businessHoursClickHandler = function(e){
@@ -124,8 +106,7 @@ var _slideStopHandler =  function(e){
     e.preventDefault();
 
     var toggle = (options.minTime) ? 1 : 0;
-    var newBusinessHours = settings.businessHours[toggle];
-
+    
     if(toggle){
 
         delete options.minTime;
@@ -135,8 +116,6 @@ var _slideStopHandler =  function(e){
         options.minTime = settings.minTime;
         options.maxTime = settings.maxTime;
     }
-
-    $(this).text(newBusinessHours);
 
     refreshCalendar();
  };
@@ -167,11 +146,9 @@ var _settingsWeekendClickHandler = function(e){
     e.preventDefault();
 
     var toggle = ($(this).text() === settings.weekend[0]);
-    var newWeekend = settings.weekend[toggle | 0];
-
+    
     options.weekends = toggle;
-    $(this).text(newWeekend);
-
+    
     refreshCalendar();
 };
 
@@ -186,8 +163,19 @@ var _totalsClickHandler = function(e){
     var toggle = ($(this).text() === settings.totals[0]);
 
     settings.showTotals = toggle;
-    
-    $(this).text(settings.totals[toggle | 0]);
+
+    refreshCalendar();
+};
+
+
+/**
+ * @function _ 
+ */
+var _mergeTimeChangeHandler = function(e){
+
+    settings.currentMergeTime = parseInt(this.value) * 100000; 
+
+    script.setOptions('mergeTime', settings.currentMergeTime);
 
     refreshCalendar();
 };
@@ -198,25 +186,38 @@ var _totalsClickHandler = function(e){
  */
 var refreshCalendar = function(){
 
-    renderCalendar(options);
+    setTimeout(function(){
+        renderCalendar(options);
+    }, 200);
 };
 
 
-var calendarElement = $("#calendar");
-var settings = config.settings;
+/**
+ * @function init
+ * @public
+ */
+var init = function(){
+        
+    calendarElement = $("#calendar");
+    settings = config.settings;
 
-var rightMenu = $(templates.menuRight);
-var leftMenu = templates.menuLeft;
 
-var settingsWeekend = $(`<a href="#">${settings.weekend[0]}</a>`);
-var businessHours = $(`<a href="#">${settings.businessHours[0]}</a>`);
-var totals = $(`<a href="#">${settings.totals[0]}</a>`);
-var settingsView = $('<a href="#" title="Change Calendar view"><i class="md md-apps"></i></a>');
+    var wrapper= document.createElement('div');
 
-rightMenu.find('#viewaction').append(settingsView);
-rightMenu.find('#weekendaction').append(settingsWeekend);
-rightMenu.find('#businesshours').append(businessHours);
-rightMenu.find('#totals').append(totals);
+    wrapper.innerHTML = templates.menuRight(settings.weekend[0], settings.businessHours[0], settings.totals[0]);
+    rightMenu = wrapper.firstChild;
+
+    wrapper.innerHTML = templates.menuLeft(settings.currentMergeTime / 100000);
+    leftMenu = wrapper.firstChild;
+
+    rightMenu.querySelector('#menu-settings-weekend').addEventListener('click', _settingsWeekendClickHandler);
+    rightMenu.querySelector('#menu-view').addEventListener('click', _settingsViewClickHandler);
+    rightMenu.querySelector('#menu-settings-businesshours').addEventListener('click', _businessHoursClickHandler);
+    rightMenu.querySelector('#menu-settings-totals').addEventListener('click', _totalsClickHandler);
+    leftMenu.querySelector('#mergetime').addEventListener("change", _mergeTimeChangeHandler);
+
+    renderCalendar(options);
+};
 
 
 var options = config.settings.calendar;
@@ -225,7 +226,6 @@ var options = config.settings.calendar;
     options.windowResize = _calendarResizeHandler;
 
 
-refreshCalendar();
-
-
+exports.init = init;
 exports.refresh = refreshCalendar;
+
