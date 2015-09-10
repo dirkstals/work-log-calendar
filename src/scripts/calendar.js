@@ -5,6 +5,8 @@ var config = require('./config');
 var helpers = require('./helpers');
 var templates = require('./templates');
 
+global.document = window.document;
+
 require('moment');
 require('fullcalendar');
 
@@ -39,7 +41,7 @@ var renderCalendar = function(options, open){
     config.settings.sliderOptions.value = settings.currentMergeTime;
 
     rightMenu.querySelector('#menu-settings-weekend').textContent = settings.weekend[options.weekends | 0];
-    rightMenu.querySelector('#menu-settings-businesshours').textContent = settings.businessHours[(options.minTime) ? 1 : 0];
+    rightMenu.querySelector('#menu-settings-businesshours').textContent = settings.businessHours[(options.minTime) ? 0 : 1];
     rightMenu.querySelector('#menu-settings-totals').textContent = settings.totals[settings.showTotals | 0];
 };
 
@@ -50,7 +52,7 @@ var renderCalendar = function(options, open){
  */
 var _calendarResizeHandler = function(view){
 
-    calendarElement.fullCalendar('option', 'contentHeight', window.innerHeight - 110);
+    calendarElement.fullCalendar('option', 'contentHeight', window.innerHeight - 108);
 };
 
 
@@ -84,12 +86,16 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 
                 for (var i = 0, l = settings.days.length; i < l; i++){
 
-                    if(totals[i]){
+                    if(weekElement = document.querySelector('.fc-day-header.fc-' + settings.days[i])){
 
-                        $('.fc-day-header.fc-' + settings.days[i]).attr('data-total', helpers.milliSecondsToTimeString(totals[i])).addClass('total');
-                    }else{
+                        if(totals[i]){
 
-                        $('.fc-day-header.fc-' + settings.days[i]).removeClass('total');
+                            weekElement.classList.add('total');
+                            weekElement.setAttribute('data-total', helpers.milliSecondsToTimeString(totals[i]));
+                        }else{
+
+                            weekElement.classList.remove('total');
+                        }
                     }
                 }
             }
@@ -134,7 +140,8 @@ var _settingsViewClickHandler = function(e){
     options.defaultView = newView;
 
     calendarElement.fullCalendar('changeView', newView); 
-    $(this).find('.md').toggleClass('md-apps', !toggle).toggleClass('md-view-week', toggle); 
+
+    this.querySelector('.material-icons').textContent = toggle ? 'view_week' : 'apps';
 };
 
 
@@ -145,7 +152,7 @@ var _settingsWeekendClickHandler = function(e){
 
     e.preventDefault();
 
-    var toggle = ($(this).text() === settings.weekend[0]);
+    var toggle = (this.textContent === settings.weekend[0]);
     
     options.weekends = toggle;
     
@@ -160,7 +167,7 @@ var _totalsClickHandler = function(e){
 
     e.preventDefault();
 
-    var toggle = ($(this).text() === settings.totals[0]);
+    var toggle = (this.textContent === settings.totals[0]);
 
     settings.showTotals = toggle;
 

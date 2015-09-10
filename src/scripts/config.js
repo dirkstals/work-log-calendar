@@ -49,7 +49,12 @@ var settings = {
         timeFormat: 'H:mm',
         titleFormat: 'D MMMM YYYY',
         columnFormat: 'ddd D',
-        eventColor: '#4caf50'
+        eventColor: '#4caf50',
+        themeButtonIcons: false,
+        buttonText:{
+            prev: 'arrow_back',
+            next: 'arrow_forward'
+        }
     },
     pmsetOptions: {
         pattern: /^(\d+)\-(\d+)\-(\d+)\s*(\d+)\:(\d+)\:(\d+)\s*[\+|\-]\d+\s.*(?:Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim,

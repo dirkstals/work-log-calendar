@@ -28,7 +28,7 @@ var templates = {
         return [    
             '<div class="leftmenu">',
                 '<p style="width:220px;">',
-                    `<input id="mergetime" class="mdl-slider mdl-js-slider" type="range" min="0" max="72" value="${arguments[0]}" step="3" tabindex="0"/>`,
+                    `<input id="mergetime" class="mdl-slider mdl-js-slider" type="range" min="0" max="72" value="${arguments[0]}" step="3" />`,
                 '</p>',
                 '<div class="mdl-tooltip" for="mergetime">',
                     'Set merge time',

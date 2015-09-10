@@ -8,6 +8,39 @@
        url(../fonts/MaterialIcons/MaterialIcons-Regular.woff2) format('woff2');
 }
 
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Roboto'),
+         local('Roboto-Regular'),
+         url('../fonts/Roboto/Roboto-Regular-webfont.woff') format('woff'),
+         url('../fonts/Roboto/Roboto-Regular-webfont.ttf') format('truetype');
+}
+
+
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Roboto'),
+         local('Roboto-Light'),
+         url('../fonts/Roboto/Roboto-Light-webfont.woff') format('woff'),
+         url('../fonts/Roboto/Roboto-Light-webfont.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    src: local('Roboto'),
+         local('Roboto-Medium'),
+         url('../fonts/Roboto/Roboto-Medium-webfont.woff') format('woff'),
+         url('../fonts/Roboto/Roboto-Medium-webfont.ttf') format('truetype');
+}
+
+
+
 .material-icons {
   font-family: 'Material Icons';
   font-weight: normal;
@@ -37,6 +70,10 @@
 
 .mdl-layout__header-row{
     padding-left: 26px;
+}
+
+.mdl-layout-title{
+  font-weight: 300;
 }
 
 
@@ -72,14 +109,13 @@ body #calendar{
 
 header{
     -webkit-app-region: drag;
-    padding-left: 10px;
 }
 
-header ul li{
+header .mdl-navigation{
     -webkit-app-region: no-drag;
 }
 
-header ul li a{
+header .mdl-layout-title{
     -webkit-user-select: none;
 }
 
