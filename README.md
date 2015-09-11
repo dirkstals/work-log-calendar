@@ -18,6 +18,5 @@ Unzip the file and doubleclick on the app (WorkLogCalendar.app or WorkLogCalenda
 
 On the last hour of your work day, you will be notified with the minutes left to work.
 
-![Notifications on windows](docs/notifications-windows.png =364x)
-![Notifications on osx](docs/notifications-osx.png =364x)
-
+<img src="docs/notifications-windows.png" alt="Notifications on windows" style="width: 364px;"/>
+<img src="docs/notifications-osx.png" alt="Notifications on osx" style="width: 364px;"/>
