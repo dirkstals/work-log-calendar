@@ -7,8 +7,8 @@
     "toolbar": false,
     "frame": false,
     "width": 800,
-    "height": 730,
-    "icon": "src/images/icon192x192.png"
+    "height": 700,
+    "icon": "src/images/icon-192.png"
   },
   "scripts": {
     "start": "nw",
@@ -23,10 +23,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bootstrap": "^3.3.5",
     "fullcalendar": "^2.3.1",
     "jquery": "^2.1.4",
+    "material-design-lite": "^1.0.4-2",
     "moment": "^2.10.3",
-    "xml2js": "^0.4.9"
+    "node-notifier": "^4.2.3",
+    "nw": "^0.12.3"
   }
 }
