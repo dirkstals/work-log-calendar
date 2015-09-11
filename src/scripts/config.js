@@ -225,9 +225,9 @@ settings.calendar.defaultView = settings.view[0];
  * Messages
  */
 var messages = {
-    half: 'whooaa we\'re halfway there!',
+    half: 'Whooaa we\'re halfway there!',
     minutes: function(){ return `Time to go after ${arguments[0]} minutes`;},
-    end: 'Get to the choppa!'
+    end: 'GET TO THE CHOPPA!'
 };
 
 exports.messages = messages;

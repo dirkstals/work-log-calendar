@@ -8,7 +8,7 @@
     "frame": false,
     "width": 800,
     "height": 700,
-    "icon": "src/images/icon192x192.png"
+    "icon": "src/images/icon-192.png"
   },
   "scripts": {
     "start": "nw",

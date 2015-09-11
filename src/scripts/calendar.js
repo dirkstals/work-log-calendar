@@ -37,9 +37,6 @@ var renderCalendar = function(options, open){
     calendarElement.find('.fc-right').append(rightMenu);
 
     leftMenu.querySelector('#mergetime').value = settings.currentMergeTime / 100000;
-
-    config.settings.sliderOptions.value = settings.currentMergeTime;
-
     rightMenu.querySelector('#menu-settings-weekend').textContent = settings.weekend[options.weekends | 0];
     rightMenu.querySelector('#menu-settings-businesshours').textContent = settings.businessHours[(options.minTime) ? 0 : 1];
     rightMenu.querySelector('#menu-settings-totals').textContent = settings.totals[settings.showTotals | 0];
@@ -140,6 +137,7 @@ var _settingsViewClickHandler = function(e){
     options.defaultView = newView;
 
     calendarElement.fullCalendar('changeView', newView); 
+    calendarElement.fullCalendar('refetchEvents');
 
     this.querySelector('.material-icons').textContent = toggle ? 'view_week' : 'apps';
 };

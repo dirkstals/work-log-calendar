@@ -128,3 +128,4 @@ exports.createMenu = createMenu;
 exports.createTrayMenu = createTrayMenu;
 exports.devtools = devtools;
 exports.close = close;
+exports.open = open;

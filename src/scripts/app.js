@@ -10,7 +10,7 @@ var notification = require('./scripts/notification'),
 var init = function(){
 
     document.querySelector('#closeapp').addEventListener('click', menu.close);
-    document.querySelector('[data-action="devtools"]').addEventListener('click', menu.devtools);
+    //document.querySelector('[data-action="devtools"]').addEventListener('click', menu.devtools);
 
     calendar.init();
     notification.heartbeat();
