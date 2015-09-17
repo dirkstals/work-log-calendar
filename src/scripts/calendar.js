@@ -32,9 +32,63 @@ var renderCalendar = function(options, open){
     calendarElement.fullCalendar(options);
 
     _calendarResizeHandler();
+};
 
-    calendarElement.find('.fc-left').append(leftMenu);
-    calendarElement.find('.fc-right').append(rightMenu);
+
+/**
+ * @function _prepareMenuItems
+ * @private
+ */
+var _prepareMenuItems = function(){
+
+    var wrapper= document.createElement('div');
+    var ssids = script.getSSIDs();
+    var totalItems = [];
+
+    for(var i = 0; ssid = ssids[i]; i++){
+        totalItems.push(templates.totalItem(ssid));
+    }
+
+    wrapper.innerHTML = templates.menuRight(totalItems.join(''), settings.weekend[0], settings.businessHours[0], settings.totals[0]);
+    rightMenu = wrapper.firstChild;
+
+    wrapper.innerHTML = templates.menuLeft(settings.currentMergeTime / 100000);
+    leftMenu = wrapper.firstChild;    
+
+    rightMenu.querySelector('#menu-settings-weekend').addEventListener('click', _settingsWeekendClickHandler);
+    rightMenu.querySelector('#menu-view').addEventListener('click', _settingsViewClickHandler);
+    rightMenu.querySelector('#menu-settings-businesshours').addEventListener('click', _businessHoursClickHandler);
+    rightMenu.querySelector('#menu-settings-totals').addEventListener('click', _totalsClickHandler);
+    leftMenu.querySelector('#mergetime').addEventListener("change", _mergeTimeChangeHandler);
+    
+    var radioButtons = rightMenu.querySelectorAll('#ssid-list .mdl-radio__button');
+
+    for(var i = 0; radioButton = radioButtons[i]; i++){
+
+        radioButton.addEventListener('click', _SSIDClickHandler);
+    }
+};
+
+
+/**
+ * @function _addMenuItemsToCalendar
+ * @private
+ */
+var _addMenuItemsToCalendar = function(){
+
+    if(!rightMenu || !leftMenu){
+
+        _prepareMenuItems();
+
+        calendarElement.find('.fc-left').append(leftMenu);
+        calendarElement.find('.fc-right').append(rightMenu);
+
+        window.componentHandler.upgradeDom();
+    }else{
+
+        calendarElement.find('.fc-left').append(leftMenu);
+        calendarElement.find('.fc-right').append(rightMenu);
+    }
 
     leftMenu.querySelector('#mergetime').value = settings.currentMergeTime / 100000;
     rightMenu.querySelector('#menu-settings-weekend').textContent = settings.weekend[options.weekends | 0];
@@ -79,7 +133,7 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 
             if(calendarView.type === settings.view[0]){
 
-                var totals = script.getTotals(calendarView, options.minTime, options.maxTime);
+                var totals = script.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
 
                 for (var i = 0, l = settings.days.length; i < l; i++){
 
@@ -97,8 +151,30 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
                 }
             }
         }
+
+        _addMenuItemsToCalendar();
     });
 }
+
+
+/** 
+ * Calendar views click handler
+ */
+var _settingsViewClickHandler = function(e){
+
+    e.preventDefault();
+
+    var toggle = (calendarElement.fullCalendar('getView').type === settings.view[0]);
+    var newView = settings.view[toggle | 0];
+
+    options.defaultView = newView;
+
+    calendarElement.fullCalendar('changeView', newView); 
+    
+    refreshCalendarEvents();
+
+    this.querySelector('.material-icons').textContent = toggle ? 'view_week' : 'apps';
+};
 
 
 /**
@@ -120,27 +196,8 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
         options.maxTime = settings.maxTime;
     }
 
-    refreshCalendar(200);
+    setTimeout(function(){ renderCalendar(options); }, 200);
  };
-
-
-/** 
- * Calendar views click handler
- */
-var _settingsViewClickHandler = function(e){
-
-    e.preventDefault();
-
-    var toggle = (calendarElement.fullCalendar('getView').type === settings.view[0]);
-    var newView = settings.view[toggle | 0];
-
-    options.defaultView = newView;
-
-    calendarElement.fullCalendar('changeView', newView); 
-    calendarElement.fullCalendar('refetchEvents');
-
-    this.querySelector('.material-icons').textContent = toggle ? 'view_week' : 'apps';
-};
 
 
 /** 
@@ -154,8 +211,9 @@ var _settingsWeekendClickHandler = function(e){
     
     options.weekends = toggle;
     
-    refreshCalendar(200);
+    setTimeout(function(){ renderCalendar(options); }, 200);
 };
+
 
 /**
  * @function _totalsClickHandler
@@ -169,8 +227,25 @@ var _totalsClickHandler = function(e){
 
     settings.showTotals = toggle;
 
-    refreshCalendar(200);
+    setTimeout(function(){ renderCalendar(options); }, 200);
 };
+
+
+/**
+ * @function _SSIDClickHandler
+ * @private
+ */
+var _SSIDClickHandler = function(e){
+
+    e.preventDefault();
+
+    settings.currentSSID = this.value;
+
+    settings.showTotals = 1;
+
+    refreshCalendarEvents();
+};
+
 
 
 /**
@@ -182,18 +257,16 @@ var _mergeTimeChangeHandler = function(e){
 
     script.setOptions('mergeTime', settings.currentMergeTime);
 
-    refreshCalendar();
+    refreshCalendarEvents();
 };
 
 /**
- * @function refreshCalendar
+ * @function refreshCalendarEvents
  * @public
  */
-var refreshCalendar = function(timeout){
+var refreshCalendarEvents = function(timeout){
 
-    setTimeout(function(){
-        renderCalendar(options);
-    }, timeout | 0);
+    calendarElement.fullCalendar('refetchEvents');
 };
 
 
@@ -206,21 +279,6 @@ var init = function(){
     calendarElement = $("#calendar");
     settings = config.settings;
 
-
-    var wrapper= document.createElement('div');
-
-    wrapper.innerHTML = templates.menuRight(settings.weekend[0], settings.businessHours[0], settings.totals[0]);
-    rightMenu = wrapper.firstChild;
-
-    wrapper.innerHTML = templates.menuLeft(settings.currentMergeTime / 100000);
-    leftMenu = wrapper.firstChild;
-
-    rightMenu.querySelector('#menu-settings-weekend').addEventListener('click', _settingsWeekendClickHandler);
-    rightMenu.querySelector('#menu-view').addEventListener('click', _settingsViewClickHandler);
-    rightMenu.querySelector('#menu-settings-businesshours').addEventListener('click', _businessHoursClickHandler);
-    rightMenu.querySelector('#menu-settings-totals').addEventListener('click', _totalsClickHandler);
-    leftMenu.querySelector('#mergetime').addEventListener("change", _mergeTimeChangeHandler);
-
     renderCalendar(options);
 };
 
@@ -232,5 +290,5 @@ var options = config.settings.calendar;
 
 
 exports.init = init;
-exports.refresh = refreshCalendar;
+exports.refresh = refreshCalendarEvents;
 

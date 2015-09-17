@@ -355,9 +355,9 @@ var setOptions = function(key, value){
  * @function getTotals
  * @public
  */
-var getTotals = function(view, minTime, maxTime){
+var getTotals = function(view, minTime, maxTime, ssid){
 
-    return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime);
+    return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime, ssid);
 };
 
 
@@ -377,7 +377,7 @@ var getTodaysTotal = function(minTime, maxTime){
  * @function _getSpecificTotals
  * @private
  */
-var _getSpecificTotals = function(startDate, endDate, minTime, maxTime){
+var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
 
     var totals = [];
 
@@ -406,14 +406,29 @@ var _getSpecificTotals = function(startDate, endDate, minTime, maxTime){
                 }                    
             }
 
+            if(ssid && startEvent.ssid !== ssid){
+
+                continue
+            }
+
             totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + ((endEvent.log === 'added' ? new Date() : endEvent.date) - startEvent.date);
         }
     }
 
     return totals;
 };
+
+/**
+ * @function getSSIDs
+ * @public
+ */
+var getSSIDs = function(){
+
+    return eventColors ? Object.keys(eventColors) : [];
+}
     
 exports.getLog = getLog;
 exports.setOptions = setOptions;
 exports.getTotals = getTotals;
 exports.getTodaysTotal = getTodaysTotal;
+exports.getSSIDs = getSSIDs;

@@ -29,5 +29,6 @@
     "moment": "^2.10.3",
     "node-notifier": "^4.2.3",
     "nw": "^0.12.3"
-  }
+  },
+  "single-instance": false
 }

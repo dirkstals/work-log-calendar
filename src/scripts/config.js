@@ -19,6 +19,7 @@ var settings = {
     mergeTime : 1 * 60 * 60 * 1000,
     cacheTime : 1 * 60 * 60 * 1000,
     alarm: 8 * 60 * 60 * 1000,
+    currentSSID: 'none',
     sliderOptions: {
         'min': 0,
         'max': 2 * 60 * 60 * 1000,
