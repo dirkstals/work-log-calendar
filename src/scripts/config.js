@@ -84,13 +84,17 @@ var settings = {
         }
     },
     syslogOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*(SHUTDOWN_TIME).*/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s(SHUTDOWN_TIME|SSID).('.*')?.*/gm,
         command: 'syslog',
         parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-14d'],
         events: {
             'SHUTDOWN_TIME': {
                 'type': 'off',
                 'description': 'syslog'
+            },
+            'SSID': {
+                'type': 'set',
+                'description': 'ssid'
             }
         }
     },

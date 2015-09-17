@@ -120,7 +120,7 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
         options.maxTime = settings.maxTime;
     }
 
-    refreshCalendar();
+    refreshCalendar(200);
  };
 
 
@@ -154,7 +154,7 @@ var _settingsWeekendClickHandler = function(e){
     
     options.weekends = toggle;
     
-    refreshCalendar();
+    refreshCalendar(200);
 };
 
 /**
@@ -169,7 +169,7 @@ var _totalsClickHandler = function(e){
 
     settings.showTotals = toggle;
 
-    refreshCalendar();
+    refreshCalendar(200);
 };
 
 
@@ -189,11 +189,11 @@ var _mergeTimeChangeHandler = function(e){
  * @function refreshCalendar
  * @public
  */
-var refreshCalendar = function(){
+var refreshCalendar = function(timeout){
 
     setTimeout(function(){
         renderCalendar(options);
-    }, 200);
+    }, timeout | 0);
 };
 
 

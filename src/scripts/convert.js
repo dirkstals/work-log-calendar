@@ -5,7 +5,9 @@ var helpers = require('./helpers');
 
 var eventArray, 
     previousCallbackTime, 
-    previousEventArray;
+    previousEventArray,
+    colorList,
+    eventColors;
 
 var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.pmsetOptions,
     securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.syslogOptions;
@@ -49,6 +51,7 @@ var _executeScript = function(callback){
         eventArray = eventArray.concat(eventList);
 
         _sortEventArray();
+        _parseSSID();
         _checkProcessdHappensOnlyAfterSyslog();
         _removeDoubles();
 
@@ -111,6 +114,81 @@ var _checkProcessdHappensOnlyAfterSyslog = function(){
 
 
 /**
+ * @function _parseSSID
+ * @private
+ */
+var _parseSSID = function(){
+    
+    var el = eventArray.length;
+    var ssid = 'none';
+
+    colorList = [
+        '#009688', // Teal
+        '#FF5722', // Deep Orange
+        '#2196F3', // Blue
+        '#F44336', // Red
+        '#673AB7', // Deep purple
+        '#E91E63', // Pink
+        '#607D8B', // Blue Grey
+        '#9C27B0', // Purple
+        '#795548'  // Brown
+    ];
+    eventColors = {'none': colorList.shift()};
+    firstOnEvent = eventArray.length;
+
+
+    for (var i = 0; currentEvent = eventArray[i]; i++){
+
+        currentEvent.ssid = ssid;
+
+        if(currentEvent.event === 'on' && firstOnEvent > i){
+               
+            firstOnEvent = i;
+        }
+
+        if(currentEvent.event === 'off'){
+
+            if(firstOnEvent < eventArray.length){
+
+                for(var j = firstOnEvent; j < i; j++){
+
+                    eventArray[j].ssid = ssid;
+                }
+
+                firstOnEvent = eventArray.length;
+            }
+        }
+
+        if(currentEvent.event === 'set'){
+            
+            ssid = currentEvent.data;
+
+            if(firstOnEvent < eventArray.length){
+
+                for(var j = firstOnEvent; j < i; j++){
+
+                    eventArray[j].ssid = ssid;
+                }
+            }
+
+            if(!(currentEvent.data in eventColors)){
+
+                eventColors[ssid] = colorList.shift();
+            }
+        }
+    }
+
+    while (el--) {
+        
+        if(eventArray[el].event === 'set'){
+
+            eventArray.splice(el,1);
+        }
+    }    
+};
+
+
+/**
  * @function _addCurrentTime
  * @private
  */
@@ -125,6 +203,7 @@ var _addCurrentTime = function(){
         "log": 'added'
     });
 };
+
 
 /**
  * @function _prepareCollection
@@ -142,10 +221,13 @@ var _prepareCollection = function(){
         if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
             startEvent.event === 'on' && endEvent.event === 'off'){
 
+            var title = (startEvent.ssid === 'none' || startEvent.ssid === 'undefined') ? '' : ' ' + startEvent.ssid;
+
             collection.push({
-                "title" : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date),
-                "start": startEvent.date.toJSON(),
-                "end": endEvent.date.toJSON()
+                'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + title,
+                'start': startEvent.date.toJSON(),
+                'end': endEvent.date.toJSON(),
+                'color': eventColors[startEvent.ssid]
             });
         }
     }
@@ -206,7 +288,8 @@ var _mergeEvents = function(){
         
         if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
             
-            if (previousEvent.event === 'off' && currentEvent.event === 'on'){
+            if (previousEvent.event === 'off' && currentEvent.event === 'on' && 
+                previousEvent.ssid === currentEvent.ssid){
                 
                 if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
 
@@ -217,6 +300,7 @@ var _mergeEvents = function(){
         }
     }
 };
+
 
 /**
  * @function _addOldEvents
@@ -256,6 +340,7 @@ var _addOldEvents = function(){
         return new Date(a.date) - new Date(b.date);
     });
 };
+
 
 /**
  * set options

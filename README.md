@@ -18,5 +18,16 @@ Unzip the file and doubleclick on the app (WorkLogCalendar.app or WorkLogCalenda
 
 On the last hour of your work day, you will be notified with the minutes left to work.
 
-<img src="docs/notifications-osx.png" alt="Notifications on osx" width="360"/>
-<img src="docs/notifications-windows.png" alt="Notifications on windows" width="360"/>
+<img src="docs/notifications-osx.png" alt="Notifications on osx" width="45%"/>
+<img src="docs/notifications-windows.png" alt="Notifications on windows" width="45%"/>
+
+## Windows event logging
+
+The screen saver and workstation locking event is not logged by default. 
+To enable logging you need to run gpedit.msc (Local Group Policy Editor). Navigate to **Computer configuration > Windows Settings > Security Settings > Advanced Audit Policy Configuration > System Audit Policies > Logon/Logoff**. Then in "**Audit Other Logon/Logoff Event**" check the box for Success. It will enable event logging for :
+
+* Locking and unlocking a workstation.
+* Invoking a screen saver.
+* Dismissal of a screen saver.
+
+![Windows Event Loggin](docs/gpedit.png "Windows Event Logging")

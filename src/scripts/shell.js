@@ -24,11 +24,18 @@ var getEvents = function(options, callback){
 
         while (match = options.pattern.exec(str)) {
 
-            eventList.push({
+            var event = {
                 'date' : new Date(match[1] ? match[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + match[2])).getMonth(), match[3], match[4], match[5], match[6]),
                 'event': options.events[match[7]].type,
                 'log'  : options.events[match[7]].description
-            });
+            };
+
+            if(match[8]){
+
+                event.data = match[8].replace(/'/g, '');
+            }
+
+            eventList.push(event);
         }        
 
         str = '';
