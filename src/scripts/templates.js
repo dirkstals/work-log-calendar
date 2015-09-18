@@ -10,12 +10,16 @@ var templates = {
             '<div class="rightmenu">',
 
                 '<button id="menu-totals" class="mdl-button mdl-js-button mdl-button--icon">',
-                    '<i class="material-icons md-18">add</i>',
+                    '<i class="material-icons md-18">info_outline</i>',
                 '</button>',
                 
                 '<ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="menu-totals" id="ssid-list">',
                     `${arguments[0]}`,
                 '</ul>',
+
+                '<button id="menu-filter" class="mdl-button mdl-js-button mdl-button--icon">',
+                    '<i class="material-icons md-18">filter_list</i>',
+                '</button>',
 
                 '<button id="menu-view" class="mdl-button mdl-js-button mdl-button--icon">',
                     '<i class="material-icons md-18">apps</i>',

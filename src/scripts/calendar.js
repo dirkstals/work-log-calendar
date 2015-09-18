@@ -59,6 +59,7 @@ var _prepareMenuItems = function(){
     rightMenu.querySelector('#menu-view').addEventListener('click', _settingsViewClickHandler);
     rightMenu.querySelector('#menu-settings-businesshours').addEventListener('click', _businessHoursClickHandler);
     rightMenu.querySelector('#menu-settings-totals').addEventListener('click', _totalsClickHandler);
+    rightMenu.querySelector('#menu-filter').addEventListener('click', _filterClickHandler);
     leftMenu.querySelector('#mergetime').addEventListener("change", _mergeTimeChangeHandler);
     
     var radioButtons = rightMenu.querySelectorAll('#ssid-list .mdl-radio__button');
@@ -228,6 +229,20 @@ var _totalsClickHandler = function(e){
     settings.showTotals = toggle;
 
     setTimeout(function(){ renderCalendar(options); }, 200);
+};
+
+
+/**
+ * @function _filterClickHandler
+ * @private
+ */
+var _filterClickHandler = function(e){
+
+    e.preventDefault();
+
+    settings.filter = !settings.filter;
+
+    refreshCalendarEvents();
 };
 
 

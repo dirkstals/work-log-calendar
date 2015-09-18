@@ -178,6 +178,8 @@ var _parseSSID = function(){
         }
     }
 
+    config.settings.currentSSID = ssid;
+
     while (el--) {
         
         if(eventArray[el].event === 'set'){
@@ -223,12 +225,18 @@ var _prepareCollection = function(){
 
             var title = (startEvent.ssid === 'none' || startEvent.ssid === 'undefined') ? '' : ' ' + startEvent.ssid;
 
-            collection.push({
-                'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + title,
+            var event = {
+                'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + (config.settings.filter ? title : ''),
                 'start': startEvent.date.toJSON(),
-                'end': endEvent.date.toJSON(),
-                'color': eventColors[startEvent.ssid]
-            });
+                'end': endEvent.date.toJSON()
+            };
+
+            if(config.settings.filter){
+
+                event.color = eventColors[startEvent.ssid];
+            }
+
+            collection.push(event);
         }
     }
 
@@ -288,13 +296,16 @@ var _mergeEvents = function(){
         
         if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
             
-            if (previousEvent.event === 'off' && currentEvent.event === 'on' && 
-                previousEvent.ssid === currentEvent.ssid){
-                
-                if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
+            if (previousEvent.event === 'off' && currentEvent.event === 'on'){
 
-                    eventArray.splice(i-1, 2);
-                    i--;
+                if((config.settings.filter && previousEvent.ssid === currentEvent.ssid) ||
+                    !config.settings.filter){
+                    
+                    if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
+
+                        eventArray.splice(i-1, 2);
+                        i--;
+                    }
                 }
             }
         }
@@ -406,7 +417,7 @@ var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
                 }                    
             }
 
-            if(ssid && startEvent.ssid !== ssid){
+            if(config.settings.filter && ssid && startEvent.ssid !== ssid){
 
                 continue
             }

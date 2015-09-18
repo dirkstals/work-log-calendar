@@ -20,6 +20,7 @@ var settings = {
     cacheTime : 1 * 60 * 60 * 1000,
     alarm: 8 * 60 * 60 * 1000,
     currentSSID: 'none',
+    filter: false,
     sliderOptions: {
         'min': 0,
         'max': 2 * 60 * 60 * 1000,
