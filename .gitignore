@@ -3,3 +3,4 @@ node_modules/
 dist/
 Logs/
 .tmp/
+events.json

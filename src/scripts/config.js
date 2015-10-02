@@ -6,6 +6,7 @@ var path = require('path');
  * General settings
  */
 var settings = {
+    oldEventsFile: 'events.json',
     windows: process.platform === 'win32',
     weekend: ['Show Weekends', 'Hide Weekends'],
     view: ['agendaWeek', 'month'],
@@ -86,7 +87,7 @@ var settings = {
         }
     },
     syslogOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s(SHUTDOWN_TIME|SSID).('.*')?.*/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s(SHUTDOWN_TIME|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
         command: 'syslog',
         parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-14d'],
         events: {
@@ -97,6 +98,10 @@ var settings = {
             'SSID': {
                 'type': 'set',
                 'description': 'ssid'
+            },
+            'Ethernet': {
+                'type': 'set',
+                'description': 'ethernet'
             }
         }
     },
@@ -164,6 +169,10 @@ var settings = {
             '4647': {
                 'type': 'off',
                 'description': '4647 - User initiated logoff'
+            },
+            '8000': {
+                'type': 'set',
+                'description': '8000 - WLAN AutoConfig service started a connection to a wireless network.'
             }
         }
     },
@@ -206,6 +215,10 @@ var settings = {
             '7002': {
                 'type': 'off',
                 'description': '7002 - User Logoff Notification for Customer Experience Improvement Program'
+            },
+            '8000': {
+                'type': 'set',
+                'description': '8000 - WLAN AutoConfig service started a connection to a wireless network.'
             }
         }
     }

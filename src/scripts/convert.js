@@ -1,7 +1,9 @@
+
+var fs = require('fs');
+
 var Shell = require('./shell');
 var config = require('./config');
 var helpers = require('./helpers');
-
 
 var eventArray, 
     previousCallbackTime, 
@@ -42,6 +44,17 @@ var getLog = function(callback){
 var _executeScript = function(callback){
 
 
+    var _oldEventsAdded = function(){
+
+        _removeDoubles();
+
+        previousCallbackTime = new Date();
+        previousEventArray = eventArray.slice(0);
+
+        _startParsing(callback);
+    };
+
+
     /**
      * @function _securityScriptCallback
      * @private
@@ -53,12 +66,7 @@ var _executeScript = function(callback){
         _sortEventArray();
         _parseSSID();
         _checkProcessdHappensOnlyAfterSyslog();
-        _removeDoubles();
-
-        previousCallbackTime = new Date();
-        previousEventArray = eventArray.slice(0);
-
-        _startParsing(callback);
+        _addOldEvents(_oldEventsAdded);
     };
 
 
@@ -83,8 +91,6 @@ var _executeScript = function(callback){
  */
 var _startParsing = function(callback){
 
-    _addOldEvents();
-    _convertStringToDate();
     _mergeEvents();
     _addCurrentTime();
 
@@ -171,7 +177,7 @@ var _parseSSID = function(){
                 }
             }
 
-            if(!(currentEvent.data in eventColors)){
+            if(!(ssid in eventColors)){
 
                 eventColors[ssid] = colorList.shift();
             }
@@ -317,25 +323,63 @@ var _mergeEvents = function(){
  * @function _addOldEvents
  * @private
  */
-var _addOldEvents = function(){
+var _addOldEvents = function(callback){
 
-    if((oldEventArray = JSON.parse(window.localStorage.getItem('events') || 'null'))){
+    /**
+     * @function _readOldEventsFile
+     * @private
+     */
+    var _readOldEventsFile = function(error, data){
 
-        for(var i = 0, l = oldEventArray.length; i < l; i++){
+        if(oldEventArray = JSON.parse(data || null)){
             
-            if(new Date(oldEventArray[i].date).getTime() === eventArray[0].date.getTime()){
-                
-                eventArray = oldEventArray.slice(0, i).concat(eventArray);
-                break;
+            /** 
+             * merge old and new events
+             */
+            eventArray = oldEventArray.concat(eventArray);
+
+
+            _convertStringToDate();
+            _sortEventArray();
+
+
+            /** 
+             * remove all unwanted entries.
+             */
+            for(var i = 0, l = eventArray.length; i < l; i++){
+
+                _checkNextEntry(eventArray, i, i + 1);
             }
+
+
+            /**
+             * Remove the undefined entries
+             */
+            eventArray = eventArray.filter( function( el ){ return (typeof el !== "undefined"); } );
         }
-    }
 
-    // refill localstorage
-    window.localStorage.setItem('events', JSON.stringify(eventArray));
+        fs.writeFile(config.settings.oldEventsFile, JSON.stringify(eventArray));
 
+        callback();
+    };
+    
+    fs.readFile(config.settings.oldEventsFile, 'utf8', _readOldEventsFile);    
 };
 
+
+/**
+ * Check and delete the same items
+ */
+var _checkNextEntry = function(arr, i, j){
+
+    if(arr[i] && arr[j] && (arr[i].date.getTime() === arr[j].date.getTime())){
+
+        arr[i] = _mergeOptions(arr[i], arr[j]);
+        delete arr[j];
+
+        _checkNextEntry(arr, i, j + 1);
+    } 
+}
 
 /**
  * @function _sortEventArray
@@ -350,6 +394,21 @@ var _addOldEvents = function(){
       
         return new Date(a.date) - new Date(b.date);
     });
+};
+
+
+/**
+ * @function _mergeOptions
+ * @private
+ */
+var _mergeOptions = function(obj1, obj2){
+
+    var obj3 = {};
+
+    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+
+    return obj3;
 };
 
 
