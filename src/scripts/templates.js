@@ -17,17 +17,33 @@ var templates = {
                     `${arguments[0]}`,
                 '</ul>',
 
+                '<div class="mdl-tooltip" for="menu-totals">',
+                    'Filter totals on wifi',
+                '</div>',
+
                 '<button id="menu-filter" class="mdl-button mdl-js-button mdl-button--icon">',
                     '<i class="material-icons md-18">filter_list</i>',
                 '</button>',
+
+                '<div class="mdl-tooltip" for="menu-filter">',
+                    'Wifi filter',
+                '</div>',
 
                 '<button id="menu-view" class="mdl-button mdl-js-button mdl-button--icon">',
                     '<i class="material-icons md-18">apps</i>',
                 '</button>',
 
+                '<div class="mdl-tooltip" for="menu-view">',
+                    'Calendar view',
+                '</div>',
+
                 '<button id="menu-settings" class="mdl-button mdl-js-button mdl-button--icon">',
                     '<i class="material-icons md-18">settings</i>',
                 '</button>',
+
+                '<div class="mdl-tooltip" for="menu-settings">',
+                    'Settings',
+                '</div>',
                 
                 '<ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="menu-settings">',
                     `<li class="mdl-menu__item" id="menu-settings-weekend">${arguments[1]}</li>`,
