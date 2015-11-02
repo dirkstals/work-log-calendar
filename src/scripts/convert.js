@@ -11,7 +11,7 @@ var eventArray,
     colorList,
     eventColors;
 
-var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.pmsetOptions,
+var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.syslogOptions,
     securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.syslogOptions;
 
 
@@ -65,7 +65,6 @@ var _executeScript = function(callback){
 
         _sortEventArray();
         _parseSSID();
-        _checkProcessdHappensOnlyAfterSyslog();
         _addOldEvents(_oldEventsAdded);
     };
 
@@ -81,7 +80,7 @@ var _executeScript = function(callback){
         Shell.getEvents(securityScriptOptions, _securityScriptCallback);
     };
 
-    Shell.getEvents(systemScriptOptions, _systemScriptCallback);
+    Shell.getEvents(systemScriptOptions, config.settings.windows ? _systemScriptCallback : _securityScriptCallback);
 };
 
 
@@ -95,27 +94,6 @@ var _startParsing = function(callback){
     _addCurrentTime();
 
     callback(_prepareCollection());
-};
-
-
-/**
- * @function _checkProcessdHappensOnlyAfterSyslog
- * @private
- */
-var _checkProcessdHappensOnlyAfterSyslog = function(){
-    
-    var i = eventArray.length;
-
-    while (i--) {
-        
-        if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
-            
-            if (currentEvent.log === 'processd' && previousEvent.log !== 'syslog'){
-                
-                eventArray.splice(i,1);
-            }
-        }
-    }        
 };
 
 

@@ -59,41 +59,22 @@ var settings = {
             next: 'arrow_forward'
         }
     },
-    pmsetOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)\s*(\d+)\:(\d+)\:(\d+)\s*[\+|\-]\d+\s.*(?:Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim,
-        command: 'pmset',
-        parameters: ['-g', 'log'],
-        events: {
-            'on': {
-                'type': 'on',
-                'description': 'display'
-            },
-            'off': {
-                'type': 'off',
-                'description': 'display'
-            },
-            'Sleep': {
-                'type': 'off',
-                'description': 'Clamshell sleep'
-            },
-            'Open': {
-                'type': 'on',
-                'description': 'Lid open'
-            },
-            'started': {
-                'type': 'on',
-                'description': 'processd'
-            }
-        }
-    },
     syslogOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s(SHUTDOWN_TIME|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s?(SHUTDOWN_TIME|CGXDisplayDidWakeNotification|device_generate_lock_screen|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
         command: 'syslog',
-        parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-14d'],
+        parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-8d'],
         events: {
             'SHUTDOWN_TIME': {
                 'type': 'off',
-                'description': 'syslog'
+                'description': 'shutdown time'
+            },
+            'CGXDisplayDidWakeNotification': {
+                'type': 'on',
+                'description': 'Display did wake'
+            },
+            'device_generate_lock_screen': {
+                'type': 'off',
+                'description': 'Generate Lock Screen'
             },
             'SSID': {
                 'type': 'set',
