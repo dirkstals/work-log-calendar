@@ -18,7 +18,6 @@
          url('../fonts/Roboto/Roboto-Regular-webfont.ttf') format('truetype');
 }
 
-
 @font-face {
     font-family: 'Roboto';
     font-style: normal;
@@ -76,7 +75,6 @@
   font-weight: 300;
 }
 
-
 .leftmenu{
     position: absolute;
     left: 0px;
@@ -87,8 +85,6 @@
     position: absolute;
     right: 16px;
 }
-
-
 
 html, body {
   overflow: hidden;
@@ -105,6 +101,11 @@ body #content {
 
 body #calendar{
     margin-bottom: 0;
+}
+
+#norequire{
+    text-align: center;
+    padding-top: 100px;
 }
 
 header{
@@ -138,19 +139,3 @@ header .mdl-layout-title{
     color: white;
     padding: 6px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
