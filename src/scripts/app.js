@@ -3,9 +3,7 @@ if(typeof require === 'undefined'){
 
     var message = document.createElement('p');
         message.id = 'norequire';
-        message.textContent = [
-            'Did you read the README.md?'
-        ].join('');
+        message.textContent = 'Did you read the README.md?';
 
     document.querySelector('#calendar').appendChild(message);
 }
