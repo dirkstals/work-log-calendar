@@ -123,6 +123,11 @@ var createMenu = function(){
 mainWindow.on('close', quit);
 mainWindow.focus();
 
+/**
+ * make sure the running app opens, instead of opening a new app.
+ */
+gui.App.on('reopen', open);
+
 
 exports.createMenu = createMenu;
 exports.createTrayMenu = createTrayMenu;
