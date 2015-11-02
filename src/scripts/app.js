@@ -1,4 +1,15 @@
 
+if(typeof require === 'undefined'){
+
+    var message = document.createElement('p');
+        message.id = 'norequire';
+        message.textContent = [
+            'Did you read the README.md?'
+        ].join('');
+
+    document.querySelector('#calendar').appendChild(message);
+}
+
 var notification = require('./scripts/notification'),
     menu = require('./scripts/menu'),
     calendar = require('./scripts/calendar');

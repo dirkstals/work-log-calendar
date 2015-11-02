@@ -1,13 +1,17 @@
+
+var fs = require('fs');
+
 var Shell = require('./shell');
 var config = require('./config');
 var helpers = require('./helpers');
 
-
 var eventArray, 
     previousCallbackTime, 
-    previousEventArray;
+    previousEventArray,
+    colorList,
+    eventColors;
 
-var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.pmsetOptions,
+var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.syslogOptions,
     securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.syslogOptions;
 
 
@@ -40,6 +44,18 @@ var getLog = function(callback){
 var _executeScript = function(callback){
 
 
+    var _oldEventsAdded = function(){
+
+        _removeDoubles();
+        _colorSSID();
+
+        previousCallbackTime = new Date();
+        previousEventArray = eventArray.slice(0);
+
+        _startParsing(callback);
+    };
+
+
     /**
      * @function _securityScriptCallback
      * @private
@@ -49,13 +65,8 @@ var _executeScript = function(callback){
         eventArray = eventArray.concat(eventList);
 
         _sortEventArray();
-        _checkProcessdHappensOnlyAfterSyslog();
-        _removeDoubles();
-
-        previousCallbackTime = new Date();
-        previousEventArray = eventArray.slice(0);
-
-        _startParsing(callback);
+        _parseSSID();
+        _addOldEvents(_oldEventsAdded);
     };
 
 
@@ -70,7 +81,7 @@ var _executeScript = function(callback){
         Shell.getEvents(securityScriptOptions, _securityScriptCallback);
     };
 
-    Shell.getEvents(systemScriptOptions, _systemScriptCallback);
+    Shell.getEvents(systemScriptOptions, config.settings.windows ? _systemScriptCallback : _securityScriptCallback);
 };
 
 
@@ -80,8 +91,6 @@ var _executeScript = function(callback){
  */
 var _startParsing = function(callback){
 
-    _addOldEvents();
-    _convertStringToDate();
     _mergeEvents();
     _addCurrentTime();
 
@@ -90,23 +99,91 @@ var _startParsing = function(callback){
 
 
 /**
- * @function _checkProcessdHappensOnlyAfterSyslog
+ * @function _colorSSID
  * @private
  */
-var _checkProcessdHappensOnlyAfterSyslog = function(){
-    
-    var i = eventArray.length;
+var _colorSSID = function(){
 
-    while (i--) {
-        
-        if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
-            
-            if (currentEvent.log === 'processd' && previousEvent.log !== 'syslog'){
-                
-                eventArray.splice(i,1);
+    colorList = [
+        '#009688', // Teal
+        '#FF5722', // Deep Orange
+        '#2196F3', // Blue
+        '#F44336', // Red
+        '#673AB7', // Deep purple
+        '#E91E63', // Pink
+        '#607D8B', // Blue Grey
+        '#9C27B0', // Purple
+        '#795548'  // Brown
+    ];
+    eventColors = {'none': colorList.shift()};
+
+    for (var i = 0, l = eventArray.length; i < l; i++){
+
+        if(!(eventArray[i].ssid in eventColors)){
+
+            eventColors[eventArray[i].ssid] = colorList.shift();
+        }
+    }
+};
+
+
+/**
+ * @function _parseSSID
+ * @private
+ */
+var _parseSSID = function(){
+    
+    var el = eventArray.length;
+    var ssid = 'none';
+
+    firstOnEvent = eventArray.length;
+
+
+    for (var i = 0; currentEvent = eventArray[i]; i++){
+
+        currentEvent.ssid = ssid;
+
+        if(currentEvent.event === 'on' && firstOnEvent > i){
+               
+            firstOnEvent = i;
+        }
+
+        if(currentEvent.event === 'off'){
+
+            if(firstOnEvent < eventArray.length){
+
+                for(var j = firstOnEvent; j < i; j++){
+
+                    eventArray[j].ssid = ssid;
+                }
+
+                firstOnEvent = eventArray.length;
             }
         }
-    }        
+
+        if(currentEvent.event === 'set'){
+            
+            ssid = currentEvent.data;
+
+            if(firstOnEvent < eventArray.length){
+
+                for(var j = firstOnEvent; j < i; j++){
+
+                    eventArray[j].ssid = ssid;
+                }
+            }
+        }
+    }
+
+    config.settings.currentSSID = ssid;
+
+    while (el--) {
+        
+        if(eventArray[el].event === 'set'){
+
+            eventArray.splice(el,1);
+        }
+    }    
 };
 
 
@@ -126,6 +203,7 @@ var _addCurrentTime = function(){
     });
 };
 
+
 /**
  * @function _prepareCollection
  * @private
@@ -142,11 +220,20 @@ var _prepareCollection = function(){
         if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
             startEvent.event === 'on' && endEvent.event === 'off'){
 
-            collection.push({
-                "title" : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date),
-                "start": startEvent.date.toJSON(),
-                "end": endEvent.date.toJSON()
-            });
+            var title = (startEvent.ssid === 'none' || startEvent.ssid === 'undefined') ? '' : ' ' + startEvent.ssid;
+
+            var event = {
+                'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + (config.settings.filter ? title : ''),
+                'start': startEvent.date.toJSON(),
+                'end': endEvent.date.toJSON()
+            };
+
+            if(config.settings.filter){
+
+                event.color = eventColors[startEvent.ssid];
+            }
+
+            collection.push(event);
         }
     }
 
@@ -207,40 +294,83 @@ var _mergeEvents = function(){
         if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
             
             if (previousEvent.event === 'off' && currentEvent.event === 'on'){
-                
-                if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
 
-                    eventArray.splice(i-1, 2);
-                    i--;
+                if((config.settings.filter && previousEvent.ssid === currentEvent.ssid) ||
+                    !config.settings.filter){
+                    
+                    if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
+
+                        eventArray.splice(i-1, 2);
+                        i--;
+                    }
                 }
             }
         }
     }
 };
 
+
 /**
  * @function _addOldEvents
  * @private
  */
-var _addOldEvents = function(){
+var _addOldEvents = function(callback){
 
-    if((oldEventArray = JSON.parse(window.localStorage.getItem('events') || 'null'))){
+    /**
+     * @function _readOldEventsFile
+     * @private
+     */
+    var _readOldEventsFile = function(error, data){
 
-        for(var i = 0, l = oldEventArray.length; i < l; i++){
+        if(oldEventArray = JSON.parse(data || null)){
             
-            if(new Date(oldEventArray[i].date).getTime() === eventArray[0].date.getTime()){
-                
-                eventArray = oldEventArray.slice(0, i).concat(eventArray);
-                break;
+            /** 
+             * merge old and new events
+             */
+            eventArray = oldEventArray.concat(eventArray);
+
+
+            _convertStringToDate();
+            _sortEventArray();
+
+
+            /** 
+             * remove all unwanted entries.
+             */
+            for(var i = 0, l = eventArray.length; i < l; i++){
+
+                _checkNextEntry(eventArray, i, i + 1);
             }
+
+
+            /**
+             * Remove the undefined entries
+             */
+            eventArray = eventArray.filter( function( el ){ return (typeof el !== "undefined"); } );
         }
-    }
 
-    // refill localstorage
-    window.localStorage.setItem('events', JSON.stringify(eventArray));
+        fs.writeFile(config.settings.oldEventsFile, JSON.stringify(eventArray));
 
+        callback();
+    };
+    
+    fs.readFile(config.settings.oldEventsFile, 'utf8', _readOldEventsFile);    
 };
 
+
+/**
+ * Check and delete the same items
+ */
+var _checkNextEntry = function(arr, i, j){
+
+    if(arr[i] && arr[j] && (arr[i].date.getTime() === arr[j].date.getTime())){
+
+        arr[i] = _mergeOptions(arr[i], arr[j]);
+        delete arr[j];
+
+        _checkNextEntry(arr, i, j + 1);
+    } 
+}
 
 /**
  * @function _sortEventArray
@@ -257,6 +387,22 @@ var _addOldEvents = function(){
     });
 };
 
+
+/**
+ * @function _mergeOptions
+ * @private
+ */
+var _mergeOptions = function(obj1, obj2){
+
+    var obj3 = {};
+
+    for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+    for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+
+    return obj3;
+};
+
+
 /**
  * set options
  */
@@ -270,9 +416,9 @@ var setOptions = function(key, value){
  * @function getTotals
  * @public
  */
-var getTotals = function(view, minTime, maxTime){
+var getTotals = function(view, minTime, maxTime, ssid){
 
-    return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime);
+    return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime, ssid);
 };
 
 
@@ -292,7 +438,7 @@ var getTodaysTotal = function(minTime, maxTime){
  * @function _getSpecificTotals
  * @private
  */
-var _getSpecificTotals = function(startDate, endDate, minTime, maxTime){
+var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
 
     var totals = [];
 
@@ -321,14 +467,29 @@ var _getSpecificTotals = function(startDate, endDate, minTime, maxTime){
                 }                    
             }
 
+            if(config.settings.filter && ssid && startEvent.ssid !== ssid){
+
+                continue
+            }
+
             totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + ((endEvent.log === 'added' ? new Date() : endEvent.date) - startEvent.date);
         }
     }
 
     return totals;
 };
+
+/**
+ * @function getSSIDs
+ * @public
+ */
+var getSSIDs = function(){
+
+    return eventColors ? Object.keys(eventColors) : [];
+}
     
 exports.getLog = getLog;
 exports.setOptions = setOptions;
 exports.getTotals = getTotals;
 exports.getTodaysTotal = getTodaysTotal;
+exports.getSSIDs = getSSIDs;

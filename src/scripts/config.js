@@ -6,6 +6,7 @@ var path = require('path');
  * General settings
  */
 var settings = {
+    oldEventsFile: 'events.json',
     windows: process.platform === 'win32',
     weekend: ['Show Weekends', 'Hide Weekends'],
     view: ['agendaWeek', 'month'],
@@ -19,6 +20,8 @@ var settings = {
     mergeTime : 1 * 60 * 60 * 1000,
     cacheTime : 1 * 60 * 60 * 1000,
     alarm: 8 * 60 * 60 * 1000,
+    currentSSID: 'none',
+    filter: false,
     sliderOptions: {
         'min': 0,
         'max': 2 * 60 * 60 * 1000,
@@ -56,41 +59,30 @@ var settings = {
             next: 'arrow_forward'
         }
     },
-    pmsetOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)\s*(\d+)\:(\d+)\:(\d+)\s*[\+|\-]\d+\s.*(?:Display is turned|powerd process is|Lid|Clamshell)\s(\s*\w+)/gim,
-        command: 'pmset',
-        parameters: ['-g', 'log'],
-        events: {
-            'on': {
-                'type': 'on',
-                'description': 'display'
-            },
-            'off': {
-                'type': 'off',
-                'description': 'display'
-            },
-            'Sleep': {
-                'type': 'off',
-                'description': 'Clamshell sleep'
-            },
-            'Open': {
-                'type': 'on',
-                'description': 'Lid open'
-            },
-            'started': {
-                'type': 'on',
-                'description': 'processd'
-            }
-        }
-    },
     syslogOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*(SHUTDOWN_TIME).*/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s?(SHUTDOWN_TIME|CGXDisplayDidWakeNotification|device_generate_lock_screen|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
         command: 'syslog',
-        parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-14d'],
+        parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-8d'],
         events: {
             'SHUTDOWN_TIME': {
                 'type': 'off',
-                'description': 'syslog'
+                'description': 'shutdown time'
+            },
+            'CGXDisplayDidWakeNotification': {
+                'type': 'on',
+                'description': 'Display did wake'
+            },
+            'device_generate_lock_screen': {
+                'type': 'off',
+                'description': 'Generate Lock Screen'
+            },
+            'SSID': {
+                'type': 'set',
+                'description': 'ssid'
+            },
+            'Ethernet': {
+                'type': 'set',
+                'description': 'ethernet'
             }
         }
     },
@@ -158,6 +150,10 @@ var settings = {
             '4647': {
                 'type': 'off',
                 'description': '4647 - User initiated logoff'
+            },
+            '8000': {
+                'type': 'set',
+                'description': '8000 - WLAN AutoConfig service started a connection to a wireless network.'
             }
         }
     },
@@ -200,6 +196,10 @@ var settings = {
             '7002': {
                 'type': 'off',
                 'description': '7002 - User Logoff Notification for Customer Experience Improvement Program'
+            },
+            '8000': {
+                'type': 'set',
+                'description': '8000 - WLAN AutoConfig service started a connection to a wireless network.'
             }
         }
     }
