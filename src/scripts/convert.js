@@ -47,6 +47,7 @@ var _executeScript = function(callback){
     var _oldEventsAdded = function(){
 
         _removeDoubles();
+        _colorSSID();
 
         previousCallbackTime = new Date();
         previousEventArray = eventArray.slice(0);
@@ -98,13 +99,10 @@ var _startParsing = function(callback){
 
 
 /**
- * @function _parseSSID
+ * @function _colorSSID
  * @private
  */
-var _parseSSID = function(){
-    
-    var el = eventArray.length;
-    var ssid = 'none';
+var _colorSSID = function(){
 
     colorList = [
         '#009688', // Teal
@@ -118,6 +116,26 @@ var _parseSSID = function(){
         '#795548'  // Brown
     ];
     eventColors = {'none': colorList.shift()};
+
+    for (var i = 0, l = eventArray.length; i < l; i++){
+
+        if(!(eventArray[i].ssid in eventColors)){
+
+            eventColors[eventArray[i].ssid] = colorList.shift();
+        }
+    }
+};
+
+
+/**
+ * @function _parseSSID
+ * @private
+ */
+var _parseSSID = function(){
+    
+    var el = eventArray.length;
+    var ssid = 'none';
+
     firstOnEvent = eventArray.length;
 
 
@@ -153,11 +171,6 @@ var _parseSSID = function(){
 
                     eventArray[j].ssid = ssid;
                 }
-            }
-
-            if(!(ssid in eventColors)){
-
-                eventColors[ssid] = colorList.shift();
             }
         }
     }
