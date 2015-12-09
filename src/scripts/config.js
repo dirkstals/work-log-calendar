@@ -60,13 +60,17 @@ var settings = {
         }
     },
     syslogOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s?(SHUTDOWN_TIME|CGXDisplayDidWakeNotification|device_generate_lock_screen|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)T(\d+)\:(\d+)\:(\d+)[\+|\-]\d+\s.*:\s?(SHUTDOWN_TIME|BOOT_TIME|CGXDisplayDidWakeNotification|device_generate_lock_screen|SSID|Ethernet).('.*'|.*Link up on \w+)?.*/gm,
         command: 'syslog',
         parameters: ['-T', 'ISO8601', '-k', 'Time', 'ge', '-8d'],
         events: {
             'SHUTDOWN_TIME': {
                 'type': 'off',
                 'description': 'shutdown time'
+            },
+            'BOOT_TIME': {
+                'type': 'on',
+                'description': 'boot time'
             },
             'CGXDisplayDidWakeNotification': {
                 'type': 'on',
