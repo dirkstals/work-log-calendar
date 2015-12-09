@@ -16,13 +16,17 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "vbox": "npm run vbox:sharedfolder && npm run vbox:run",
     "vbox:sharedfolder": "npm run vbox:sharedfolder:remove && npm run vbox:sharedfolder:add",
-    "vbox:sharedfolder:remove": "VBoxManage sharedfolder remove \"IE10 - Win8\" --name \"Apps\"",
-    "vbox:sharedfolder:add": "VBoxManage sharedfolder add \"IE10 - Win8\" --name \"Apps\" --hostpath \"$(pwd)\" --automount",
-    "vbox:run": "VBoxManage startvm \"IE10 - Win8\""
+    "vbox:sharedfolder:remove": "VBoxManage sharedfolder remove \"Windows 10\" --name \"Apps\"",
+    "vbox:sharedfolder:add": "VBoxManage sharedfolder add \"Windows 10\" --name \"Apps\" --hostpath \"$(pwd)\" --automount",
+    "vbox:run": "VBoxManage startvm \"Windows 10\"",
+    "enigma": "npm run enigma:generate && npm run enigma:build",
+    "enigma:generate": "enigmavirtualbox gen WorkLogCalendar.evp dist/WorkLogCalendar/WorkLogCalendar.exe dist/WorkLogCalendar/win32/WorkLogCalendar.exe dist/WorkLogCalendar/win32/nw.pak dist/WorkLogCalendar/win32/icudtl.dat",
+    "enigma:build": "enigmavirtualbox cli WorkLogCalendar.evp"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "enigmavirtualbox": "^0.9.3",
     "fullcalendar": "^2.3.1",
     "jquery": "^2.1.4",
     "material-design-lite": "^1.0.4-2",
