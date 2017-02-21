@@ -1,47 +1,18 @@
 var spawn = require('child_process').spawn;
+var EventObservable = require('EventObservable');
 
-var eventList, shell, dataList;
+var shell,
+    observable,
+    options;
 
 /**
  * @function getEvents
  * @public
  */
-var getEvents = function(options, callback){
-    
-    eventList = [];
-    dataList = [];
-        
+var getEvents = function(ops, callback){
 
-    /**
-     * @function _shellCloseHandler
-     * @private
-     */
-    var _shellCloseHandler = function (code) {
-
-        var str = dataList.join('');
-
-        dataList.length = 0;    
-
-        while (match = options.pattern.exec(str)) {
-
-            var event = {
-                'date' : new Date(match[1] ? match[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + match[2])).getMonth(), match[3], match[4], match[5], match[6]),
-                'event': options.events[match[7]].type,
-                'log'  : options.events[match[7]].description
-            };
-
-            if(match[8]){
-
-                event.data = match[8].replace(/'/g, '');
-            }
-
-            eventList.push(event);
-        }        
-
-        str = '';
-
-        callback(eventList);
-    };
+    options = opts;
+    observable = new EventObservable();
 
     /**
      * execute the script
@@ -54,25 +25,23 @@ var getEvents = function(options, callback){
     shell.on('close', _shellCloseHandler);
 };
 
+var _shellCloseHandler = function (code) {
+    observable.complete();
+};
 
-
-/**
- * @function _shellErrorHandler
- * @private
- */
 var _shellErrorHandler = function (data) {
-
     console.log('stderr: ' + data);
 };
 
-
-/**
- * @function _shellOutHandler
- * @private
- */
 var _shellOutHandler = function (data) {
+    var m = options.pattern.exec(data);
 
-    dataList.push(data);
+    observable.add({
+        timestamp: new Date(m[1] ? m[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + m[2])).getMonth(), m[3], m[4], m[5], m[6]),
+        type: options.events[m[7]].type,
+        description: options.events[m[7]].description,
+        data: m[8] ? m[8].substring(0, m[8].indexOf(' BSSID')) : m
+    });
 };
 
 exports.getEvents = getEvents;

@@ -4,7 +4,7 @@ var mainWindow = gui.Window.get();
 var calendar = require('./calendar');
 
 
-/** 
+/**
  * @function quit
  */
 var quit = function(){
@@ -36,7 +36,7 @@ var open = function(){
 };
 
 
-/** 
+/**
  * @function devtools
  * @public
  * devtools click handler
@@ -58,7 +58,7 @@ var createTrayMenu = function(){
     /**
      * Create a tray item
      */
-    var tray = new gui.Tray({ 
+    var tray = new gui.Tray({
         'icon':  windows ? 'src/images/icon@2x.png' : 'src/images/icon.tiff',
         'tooltip': 'Work Log Calendar'
     });
@@ -101,14 +101,14 @@ var createTrayMenu = function(){
  */
 var createMenu = function(){
 
-    if(!windows){ 
+    if(!windows){
 
         var nativeMenuBar = new gui.Menu({ type: "menubar" });
 
         var menuItems = new gui.Menu();
             menuItems.append(new gui.MenuItem({ label: 'Close', click: close, key : 'w'}));
-        
-        nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true}); 
+
+        nativeMenuBar.createMacBuiltin("Work Log Calendar", {hideEdit: true, hideWindow: true});
         nativeMenuBar.append(new gui.MenuItem({label: 'File', submenu: menuItems}));
 
         mainWindow.menu = nativeMenuBar;

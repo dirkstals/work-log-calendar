@@ -4,15 +4,26 @@ var fs = require('fs');
 var Shell = require('./shell');
 var config = require('./config');
 var helpers = require('./helpers');
+var EventObservable = require('./EventObservable');
 
-var eventArray, 
-    previousCallbackTime, 
+var eventArray,
+    previousCallbackTime,
     previousEventArray,
     colorList,
+    observable,
     eventColors;
 
-var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.syslogOptions,
-    securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.syslogOptions;
+var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.logOptions,
+    securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.logOptions;
+
+
+var init = function() {
+    observable = new EventObservable();
+
+    observable.on('add', function (event) {
+      //  fullcalendar.addEventSource
+    });
+}
 
 
 /**
@@ -132,7 +143,7 @@ var _colorSSID = function(){
  * @private
  */
 var _parseSSID = function(){
-    
+
     var el = eventArray.length;
     var ssid = 'none';
 
@@ -144,7 +155,7 @@ var _parseSSID = function(){
         currentEvent.ssid = ssid;
 
         if(currentEvent.event === 'on' && firstOnEvent > i){
-               
+
             firstOnEvent = i;
         }
 
@@ -162,7 +173,7 @@ var _parseSSID = function(){
         }
 
         if(currentEvent.event === 'set'){
-            
+
             ssid = currentEvent.data;
 
             if(firstOnEvent < eventArray.length){
@@ -178,12 +189,12 @@ var _parseSSID = function(){
     config.settings.currentSSID = ssid;
 
     while (el--) {
-        
+
         if(eventArray[el].event === 'set'){
 
             eventArray.splice(el,1);
         }
-    }    
+    }
 };
 
 
@@ -265,7 +276,7 @@ var _removeDoubles = function(){
     while (i--) {
 
         if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
-            
+
             if (previousEvent.event === 'off' && currentEvent.event === 'off'){
 
                 eventArray.splice(i-1, 1);
@@ -290,14 +301,14 @@ var _mergeEvents = function(){
     var i = eventArray.length;
 
     while (i--) {
-        
+
         if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
-            
+
             if (previousEvent.event === 'off' && currentEvent.event === 'on'){
 
                 if((config.settings.filter && previousEvent.ssid === currentEvent.ssid) ||
                     !config.settings.filter){
-                    
+
                     if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
 
                         eventArray.splice(i-1, 2);
@@ -323,8 +334,8 @@ var _addOldEvents = function(callback){
     var _readOldEventsFile = function(error, data){
 
         if(oldEventArray = JSON.parse(data || null)){
-            
-            /** 
+
+            /**
              * merge old and new events
              */
             eventArray = oldEventArray.concat(eventArray);
@@ -334,7 +345,7 @@ var _addOldEvents = function(callback){
             _sortEventArray();
 
 
-            /** 
+            /**
              * remove all unwanted entries.
              */
             for(var i = 0, l = eventArray.length; i < l; i++){
@@ -353,8 +364,8 @@ var _addOldEvents = function(callback){
 
         callback();
     };
-    
-    fs.readFile(config.settings.oldEventsFile, 'utf8', _readOldEventsFile);    
+
+    fs.readFile(config.settings.oldEventsFile, 'utf8', _readOldEventsFile);
 };
 
 
@@ -369,7 +380,7 @@ var _checkNextEntry = function(arr, i, j){
         delete arr[j];
 
         _checkNextEntry(arr, i, j + 1);
-    } 
+    }
 }
 
 /**
@@ -382,7 +393,7 @@ var _checkNextEntry = function(arr, i, j){
      * sort events on date
      */
     eventArray.sort(function(a,b){
-      
+
         return new Date(a.date) - new Date(b.date);
     });
 };
@@ -445,26 +456,26 @@ var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
     for (var i = 0, l = eventArray.length; i < l; i++){
 
         if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
-            startEvent.event === 'on' && endEvent.event === 'off' && 
+            startEvent.event === 'on' && endEvent.event === 'off' &&
             startEvent.date >= startDate && startEvent.date <= endDate &&
             startEvent.date.getDay() === endEvent.date.getDay()){
 
             if(minTime && maxTime){
 
-                var startHour = 
-                    (startEvent.date.getHours() * 60 * 60 * 1000) + 
-                    (startEvent.date.getMinutes() * 60 * 1000) + 
+                var startHour =
+                    (startEvent.date.getHours() * 60 * 60 * 1000) +
+                    (startEvent.date.getMinutes() * 60 * 1000) +
                     (startEvent.date.getSeconds() * 1000);
 
-                var endHour = 
-                    (endEvent.date.getHours() * 60 * 60 * 1000) + 
-                    (endEvent.date.getMinutes() * 60 * 1000) + 
+                var endHour =
+                    (endEvent.date.getHours() * 60 * 60 * 1000) +
+                    (endEvent.date.getMinutes() * 60 * 1000) +
                     (endEvent.date.getSeconds() * 1000);
 
                 if(startHour > maxTime || endHour < minTime){
-                    
+
                     continue;
-                }                    
+                }
             }
 
             if(config.settings.filter && ssid && startEvent.ssid !== ssid){
@@ -487,7 +498,7 @@ var getSSIDs = function(){
 
     return eventColors ? Object.keys(eventColors) : [];
 }
-    
+
 exports.getLog = getLog;
 exports.setOptions = setOptions;
 exports.getTotals = getTotals;

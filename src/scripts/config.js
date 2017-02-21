@@ -12,7 +12,7 @@ var settings = {
     view: ['agendaWeek', 'month'],
     businessHours: ['Day hours', 'Business hours'],
     totals: ['Show totals', 'Hide totals'],
-    days: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'], 
+    days: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
     showTotals: 0,
     minTime: 6 * 60 * 60 * 1000,
     maxTime: 20 * 60 * 60 * 1000,
@@ -41,7 +41,7 @@ var settings = {
             center: 'prev, title, next',
             left: ''
         },
-        theme: true, 
+        theme: true,
         firstDay : 1,
         weekends : false,
         allDaySlot : false,
@@ -57,6 +57,49 @@ var settings = {
         buttonText:{
             prev: 'arrow_back',
             next: 'arrow_forward'
+        }
+    },
+    logOptions: {
+        pattern: /^(\d+)\-(\d+)\-(\d+)\h(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\h.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\h?(\S+\hBSSID\h[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2})?/gm,
+        command: 'log',
+        parameters: ['show', '--start', '2017-01-31 00:00:00', '--style', 'syslog', '--info', '--predicate', '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'],
+
+
+
+        // "Process interface link ""
+
+
+
+        // log show --start "2016-12-19 00:00:00" --style syslog --info --predicate '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'
+        events: { // '--start', '2016-12-08 00:00:00', '--end', '2016-12-09 00:00:00',
+            'System Sleep': {
+                'type': 'off',
+                'description': 'sleep'
+            },
+            'System Wake': {
+                'type': 'on',
+                'description': 'wake'
+            },
+            'System SafeSleep Wake': {
+                'type': 'on',
+                'description': 'safe sleep wake'
+            },
+            'System SafeSleep': {
+                'type': 'off',
+                'description': 'safe sleep'
+            },
+            'IODisplayWrangler+ (1)': {
+                'type': 'on',
+                'description': 'display on'
+            },
+            'IODisplayWrangler- (0)': {
+                'type': 'off',
+                'description': 'display off'
+            },
+            'SSID': {
+                'type': 'set',
+                'description': 'ssid'
+            }
         }
     },
     syslogOptions: {
@@ -91,7 +134,7 @@ var settings = {
         }
     },
     wevtutilSecurityOptions: {
-        command: 'wevtutil', 
+        command: 'wevtutil',
         parameters: ['qe', 'Security', '/f:text', '/q:*[System[TimeCreated[timediff(@SystemTime)<=' + (14 * 24 * 60 * 60 * 1000) + ']]]'],
         events: {
             // Security
@@ -102,23 +145,23 @@ var settings = {
             '513': {
                 'type': 'off',
                 'description': '513 - Windows is shutting down'
-            }, 
+            },
             '528': {
                 'type': 'on',
                 'description': '528 - Successful Logon'
-            }, 
+            },
             '538': {
                 'type': 'off',
                 'description': '538 - User Logoff'
-            }, 
+            },
             '551': {
                 'type': 'off',
                 'description': '551 - User initiated logoff'
-            }, 
+            },
             '1100': {
                 'type': 'off',
                 'description': '1100 - The event logging service has shut down'
-            }, 
+            },
             '4608': {
                 'type': 'on',
                 'description': '4608 - Windows is starting up'
@@ -162,7 +205,7 @@ var settings = {
         }
     },
     wevtutilSystemOptions: {
-        command: 'wevtutil', 
+        command: 'wevtutil',
         parameters: ['qe', 'System', '/f:text', '/q:*[System[TimeCreated[timediff(@SystemTime)<=' + (14 * 24 * 60 * 60 * 1000) + ']]]'],
         events: {
             '12': {
