@@ -43,7 +43,7 @@ var settings = {
         },
         theme: true,
         firstDay : 1,
-        weekends : false,
+        weekends : true,
         allDaySlot : false,
         axisFormat : 'H:mm',
         contentHeight: 600,
@@ -60,11 +60,12 @@ var settings = {
         }
     },
     logOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)\h(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\h.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\h?(\S+\hBSSID\h[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2}\:[[:xdigit:]]{1,2})?/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\s.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\s?(\S+\sBSSID\s[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2})?/gm,
         command: 'log',
-        parameters: ['show', '--start', '2017-01-31 00:00:00', '--style', 'syslog', '--info', '--predicate', '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'],
+        parameters: ['show', '--style', 'syslog','--info'], //, '--predicate', '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'],
 
-
+        start: ['--start', 'YYYY-MM-DD'],
+        end: ['--end', 'YYYY-MM-DD'],
 
         // "Process interface link ""
 

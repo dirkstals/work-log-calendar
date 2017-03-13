@@ -1,47 +1,69 @@
-var spawn = require('child_process').spawn;
-var EventObservable = require('EventObservable');
 
-var shell,
-    observable,
-    options;
+'use strict';
 
-/**
- * @function getEvents
- * @public
- */
-var getEvents = function(ops, callback){
+const util = require('util');
+const spawn = require('child_process').spawn;
+const EventEmitter = require('events');
+const moment = require('moment');
+const config = require('./config');
 
-    options = opts;
-    observable = new EventObservable();
+class Shell extends EventEmitter {
 
-    /**
-     * execute the script
-     * set event handlers for the script
-     */
-    shell = spawn(options.command, options.parameters);
-    shell.stdout.setEncoding('utf8');
-    shell.stdout.on('data', _shellOutHandler);
-    shell.stderr.on('data', _shellErrorHandler);
-    shell.on('close', _shellCloseHandler);
-};
+    constructor() {
+        super();
+        this.options = config.settings.logOptions;
+        this.parameters = this.options.parameters.slice(0);
+        this.days = 0;
+    }
 
-var _shellCloseHandler = function (code) {
-    observable.complete();
-};
+    getData() {
+        if(this.days === 1) {
+            this.emit('firstday');
+        }
 
-var _shellErrorHandler = function (data) {
-    console.log('stderr: ' + data);
-};
+        if(this.options.start && this.options.end && this.days < 7) {
+            this.parameters.push(this.options.start[0]);
+            this.parameters.push(moment().subtract(this.days, 'days').format(this.options.start[1]));
+            this.parameters.push(this.options.end[0]);
+            this.parameters.push(moment().subtract(this.days-1, 'days').format(this.options.end[1]));
+        }
 
-var _shellOutHandler = function (data) {
-    var m = options.pattern.exec(data);
+        let instance = spawn(this.options.command, this.parameters);
+        instance.stdout.setEncoding('utf8');
+        instance.stdout.on('data', this.shellOutHandler.bind(this));
+        instance.stderr.on('data', this.shellErrorHandler.bind(this));
 
-    observable.add({
-        timestamp: new Date(m[1] ? m[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + m[2])).getMonth(), m[3], m[4], m[5], m[6]),
-        type: options.events[m[7]].type,
-        description: options.events[m[7]].description,
-        data: m[8] ? m[8].substring(0, m[8].indexOf(' BSSID')) : m
-    });
-};
+        if(this.options.start && this.options.end && this.days < 7) {
+            this.days++;
+            instance.on('close', this.getData.bind(this));
+        } else {
+            instance.on('close', this.shellCloseHandler.bind(this));
+        }
+    }
 
-exports.getEvents = getEvents;
+    shellCloseHandler (code) {
+        this.days = 0;
+        this.emit('close');
+    }
+
+    shellErrorHandler (data) {
+        console.log('stderr: ' + data);
+    }
+
+    shellOutHandler (data) {
+        let m = null;
+
+        while (m = this.options.pattern.exec(data)) {
+            m[7] = m[7].replace('_', '');
+            m[7] = m[7].replace('/', '');
+            this.emit('output', {
+                timestamp: new Date(m[1] ? m[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + m[2])).getMonth(), m[3], m[4], m[5], m[6]),
+                type: this.options.events[m[7].trim()].type,
+                description: this.options.events[m[7].trim()].description,
+                data: m[8] ? m[8].substring(0, m[8].indexOf(' BSSID')) : m
+            });
+        }
+    }
+}
+
+module.exports = Shell;

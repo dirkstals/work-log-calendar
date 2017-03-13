@@ -32,7 +32,8 @@
     "material-design-lite": "^1.0.4-2",
     "moment": "^2.10.3",
     "node-notifier": "^4.2.3",
-    "nw": "^0.19.0"
+    "nw": "^0.19.0",
+    "pty": "0.0.0"
   },
   "single-instance": false,
   "chromium-args": "--allow-file-access-from-files --allow-file-access --user-data-dir --mixed-context"

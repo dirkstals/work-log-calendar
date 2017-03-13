@@ -1,6 +1,6 @@
 
 var notifier = require('node-notifier');
-var script = require('./convert');
+var script = require('./dataManipulator');
 var config = require('./config');
 var menu = require('./menu');
 
@@ -40,12 +40,12 @@ var heartbeat = function(){
             message = config.messages.end;
             break;
     }
-    
+
     if(message){
 
         config.settings.notification.message = message;
 
-        notifier.notify(config.settings.notification).on('click', _notificationClickHandler);    
+        notifier.notify(config.settings.notification).on('click', _notificationClickHandler);
     }
 
     setTimeout(heartbeat, config.settings.notificationHeartbeat);

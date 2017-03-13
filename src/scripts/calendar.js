@@ -1,9 +1,10 @@
 
 var $ = require('jquery');
-var script = require('./convert');
+var dataManeger = require('./dataManager');
 var config = require('./config');
 var helpers = require('./helpers');
 var templates = require('./templates');
+var DataCollector = require('./dataCollector');
 
 global.document = window.document;
 
@@ -32,6 +33,8 @@ var renderCalendar = function(options, open){
     calendarElement.fullCalendar(options);
 
     _calendarResizeHandler();
+
+    //fullcalendar.addEventSource();
 };
 
 
@@ -42,7 +45,7 @@ var renderCalendar = function(options, open){
 var _prepareMenuItems = function(){
 
     var wrapper= document.createElement('div');
-    var ssids = script.getSSIDs();
+    var ssids = dataManager.getSSIDs();
     var totalItems = [];
 
     for(var i = 0; ssid = ssids[i]; i++){
@@ -53,7 +56,7 @@ var _prepareMenuItems = function(){
     rightMenu = wrapper.firstChild;
 
     wrapper.innerHTML = templates.menuLeft(settings.currentMergeTime / 100000);
-    leftMenu = wrapper.firstChild;    
+    leftMenu = wrapper.firstChild;
 
     rightMenu.querySelector('#menu-settings-weekend').addEventListener('click', _settingsWeekendClickHandler);
     rightMenu.querySelector('#menu-view').addEventListener('click', _settingsViewClickHandler);
@@ -61,7 +64,7 @@ var _prepareMenuItems = function(){
     rightMenu.querySelector('#menu-settings-totals').addEventListener('click', _totalsClickHandler);
     rightMenu.querySelector('#menu-filter').addEventListener('click', _filterClickHandler);
     leftMenu.querySelector('#mergetime').addEventListener("change", _mergeTimeChangeHandler);
-    
+
     var radioButtons = rightMenu.querySelectorAll('#ssid-list .mdl-radio__button');
 
     for(var i = 0; radioButton = radioButtons[i]; i++){
@@ -114,7 +117,7 @@ var _calendarResizeHandler = function(view){
  */
 var _calendarEventClickHandler = function(calEvent, jsEvent, view) {
 
-    // alert(calEvent.title);
+    console.log(calEvent.data);
 };
 
 
@@ -124,7 +127,7 @@ var _calendarEventClickHandler = function(calEvent, jsEvent, view) {
  */
 var _calendarEventsHandler = function(start, end, timezone, callback) {
 
-    script.getLog(function(collection){
+    dataManager.getLog(function(collection){
 
         callback(collection);
 
@@ -134,7 +137,7 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 
             if(calendarView.type === settings.view[0]){
 
-                var totals = script.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
+                var totals = dataManager.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
 
                 for (var i = 0, l = settings.days.length; i < l; i++){
 
@@ -158,7 +161,7 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 }
 
 
-/** 
+/**
  * Calendar views click handler
  */
 var _settingsViewClickHandler = function(e){
@@ -170,8 +173,8 @@ var _settingsViewClickHandler = function(e){
 
     options.defaultView = newView;
 
-    calendarElement.fullCalendar('changeView', newView); 
-    
+    calendarElement.fullCalendar('changeView', newView);
+
     refreshCalendarEvents();
 
     this.querySelector('.material-icons').textContent = toggle ? 'view_week' : 'apps';
@@ -186,7 +189,7 @@ var _settingsViewClickHandler = function(e){
     e.preventDefault();
 
     var toggle = (options.minTime) ? 1 : 0;
-    
+
     if(toggle){
 
         delete options.minTime;
@@ -201,7 +204,7 @@ var _settingsViewClickHandler = function(e){
  };
 
 
-/** 
+/**
  * Calendar weekends click Handler
  */
 var _settingsWeekendClickHandler = function(e){
@@ -209,9 +212,9 @@ var _settingsWeekendClickHandler = function(e){
     e.preventDefault();
 
     var toggle = (this.textContent === settings.weekend[0]);
-    
+
     options.weekends = toggle;
-    
+
     setTimeout(function(){ renderCalendar(options); }, 200);
 };
 
@@ -264,13 +267,13 @@ var _SSIDClickHandler = function(e){
 
 
 /**
- * @function _ 
+ * @function _
  */
 var _mergeTimeChangeHandler = function(e){
 
-    settings.currentMergeTime = parseInt(this.value) * 100000; 
+    settings.currentMergeTime = parseInt(this.value) * 100000;
 
-    script.setOptions('mergeTime', settings.currentMergeTime);
+    dataManager.setOptions('mergeTime', settings.currentMergeTime);
 
     refreshCalendarEvents();
 };
@@ -285,25 +288,70 @@ var refreshCalendarEvents = function(timeout){
 };
 
 
+
+var createTimeSlot = function(event) {
+    var startDateTime = event.start.timestamp;
+    var endDateTime = event.end.timestamp;
+
+    // console.log(endDateTime, startDateTime);
+    // console.log(endDateTime - startDateTime);
+    // console.log(helpers.milliSecondsToTimeString(endDateTime - startDateTime));
+
+    var timeslot = {
+        title: helpers.milliSecondsToTimeString(endDateTime - startDateTime),
+        start: startDateTime.toJSON(),
+        end: endDateTime.toJSON(),
+        data: event.data
+    };
+
+    return timeslot;
+};
+
+
 /**
  * @function init
  * @public
  */
 var init = function(){
-        
+
+    var dataCollector = new DataCollector();
+
+    dataCollector.on('timeslot', function (event) {
+        //  fullcalendar.addEventSource
+        //  asynchronous events
+        console.log('timeslot received');
+
+        calendarElement.fullCalendar('addEventSource', [createTimeSlot(event)]);
+    });
+
+    dataCollector.on('complete', function (events) {
+        //  fullcalendar
+        console.log('complete received');
+        //  synchronous events
+        if(events) {
+          //  options.events = events.map(createTimeSlot);
+        }
+
+        //renderCalendar(options);
+    });
+
     calendarElement = $("#calendar");
     settings = config.settings;
 
     renderCalendar(options);
+
+    // dataManager.getLog(function(e) {
+    //     console.log('got log ');
+    //     console.log(e);
+    // });
 };
 
 
 var options = config.settings.calendar;
     options.eventClick = _calendarEventClickHandler;
-    options.events = _calendarEventsHandler;
+    //options.events = _calendarEventsHandler;
     options.windowResize = _calendarResizeHandler;
 
 
 exports.init = init;
 exports.refresh = refreshCalendarEvents;
-
