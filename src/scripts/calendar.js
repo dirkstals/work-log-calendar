@@ -1,6 +1,6 @@
 
 var $ = require('jquery');
-var dataManeger = require('./dataManager');
+var DataManager = require('./dataManager');
 var config = require('./config');
 var helpers = require('./helpers');
 var templates = require('./templates');
@@ -19,7 +19,8 @@ var calendarElement,
     settingsWeekend,
     businessHours,
     totals,
-    settingsView;
+    settingsView,
+    dataManager;
 
 
 /**
@@ -33,6 +34,8 @@ var renderCalendar = function(options, open){
     calendarElement.fullCalendar(options);
 
     _calendarResizeHandler();
+
+    _addMenuItemsToCalendar();
 
     //fullcalendar.addEventSource();
 };
@@ -127,37 +130,54 @@ var _calendarEventClickHandler = function(calEvent, jsEvent, view) {
  */
 var _calendarEventsHandler = function(start, end, timezone, callback) {
 
-    dataManager.getLog(function(collection){
+    var data = dataManager.getData(start.toDate(), end.toDate());
 
-        callback(collection);
+    var calendarData = [];
 
-        if(settings.showTotals){
-
-            var calendarView = calendarElement.fullCalendar('getView');
-
-            if(calendarView.type === settings.view[0]){
-
-                var totals = dataManager.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
-
-                for (var i = 0, l = settings.days.length; i < l; i++){
-
-                    if(weekElement = document.querySelector('.fc-day-header.fc-' + settings.days[i])){
-
-                        if(totals[i]){
-
-                            weekElement.classList.add('total');
-                            weekElement.setAttribute('data-total', helpers.milliSecondsToTimeString(totals[i]));
-                        }else{
-
-                            weekElement.classList.remove('total');
-                        }
-                    }
-                }
-            }
+    Object.keys(data).forEach(function(key) {
+        for(var i = 0; i < data[key].length; i++) {
+            calendarData.push(createTimeSlot(data[key][i]));
         }
-
-        _addMenuItemsToCalendar();
     });
+
+    //console.log(calendarData);
+    //calendarData = [].concat.apply([], calendarData);
+
+    //console.log([].concat.apply([], data));
+
+    // manipulate for fullcalendar
+
+    callback(calendarData);
+
+
+        // callback(data);
+        //
+        // if(settings.showTotals){
+        //
+        //     var calendarView = calendarElement.fullCalendar('getView');
+        //
+        //     if(calendarView.type === settings.view[0]){
+        //
+        //         var totals = dataManager.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
+        //
+        //         for (var i = 0, l = settings.days.length; i < l; i++){
+        //
+        //             if(weekElement = document.querySelector('.fc-day-header.fc-' + settings.days[i])){
+        //
+        //                 if(totals[i]){
+        //
+        //                     weekElement.classList.add('total');
+        //                     weekElement.setAttribute('data-total', helpers.milliSecondsToTimeString(totals[i]));
+        //                 }else{
+        //
+        //                     weekElement.classList.remove('total');
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+
 }
 
 
@@ -272,8 +292,7 @@ var _SSIDClickHandler = function(e){
 var _mergeTimeChangeHandler = function(e){
 
     settings.currentMergeTime = parseInt(this.value) * 100000;
-
-    dataManager.setOptions('mergeTime', settings.currentMergeTime);
+    config.settings.mergeTime = settings.currentMergeTime;
 
     refreshCalendarEvents();
 };
@@ -290,12 +309,8 @@ var refreshCalendarEvents = function(timeout){
 
 
 var createTimeSlot = function(event) {
-    var startDateTime = event.start.timestamp;
-    var endDateTime = event.end.timestamp;
-
-    // console.log(endDateTime, startDateTime);
-    // console.log(endDateTime - startDateTime);
-    // console.log(helpers.milliSecondsToTimeString(endDateTime - startDateTime));
+    var startDateTime = new Date(event.start.timestamp);
+    var endDateTime = new Date(event.end.timestamp);
 
     var timeslot = {
         title: helpers.milliSecondsToTimeString(endDateTime - startDateTime),
@@ -313,27 +328,31 @@ var createTimeSlot = function(event) {
  * @public
  */
 var init = function(){
+    //
+    // var dataCollector = new DataCollector();
+    //
+    // dataCollector.on('timeslot', function (event) {
+    //     //  fullcalendar.addEventSource
+    //     //  asynchronous events
+    //     console.log('timeslot received');
+    //
+    //     calendarElement.fullCalendar('addEventSource', [createTimeSlot(event)]);
+    // });
+    //
+    // dataCollector.on('complete', function (events) {
+    //     //  fullcalendar
+    //     console.log('complete received');
+    //     //  synchronous events
+    //     if(events) {
+    //       //  options.events = events.map(createTimeSlot);
+    //     }
+    //
+    //     //renderCalendar(options);
+    // });
 
-    var dataCollector = new DataCollector();
+    dataManager = new DataManager();
 
-    dataCollector.on('timeslot', function (event) {
-        //  fullcalendar.addEventSource
-        //  asynchronous events
-        console.log('timeslot received');
-
-        calendarElement.fullCalendar('addEventSource', [createTimeSlot(event)]);
-    });
-
-    dataCollector.on('complete', function (events) {
-        //  fullcalendar
-        console.log('complete received');
-        //  synchronous events
-        if(events) {
-          //  options.events = events.map(createTimeSlot);
-        }
-
-        //renderCalendar(options);
-    });
+    dataManager.on('newdata', refreshCalendarEvents);
 
     calendarElement = $("#calendar");
     settings = config.settings;
@@ -349,7 +368,7 @@ var init = function(){
 
 var options = config.settings.calendar;
     options.eventClick = _calendarEventClickHandler;
-    //options.events = _calendarEventsHandler;
+    options.events = _calendarEventsHandler;
     options.windowResize = _calendarResizeHandler;
 
 

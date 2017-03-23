@@ -20,12 +20,12 @@ class DataCollector extends EventEmitter {
 
         this.shell.on('output', this.shellOutputHandler.bind(this));
         this.shell.on('close', this.shellCloseHandler.bind(this));
-        this.shell.on('firstday', this.firstDayHandler.bind(this));
+        this.shell.on('currentday', this.currentDayHandler.bind(this));
 
         this.shell.getData();
     }
 
-    firstDayHandler() {
+    currentDayHandler() {
         if(this.timeslot !== this.queue[this.queue.length - 1]) {
             if(!this.timeslot.end && this.timeslot.start) {
                 this.timeslot.end = {
@@ -56,7 +56,7 @@ class DataCollector extends EventEmitter {
         p.STARTBETWEENEND = p.START && p.BETWEEN && p.END;
         p.FULL            = p.STARTBETWEENEND || p.STARTEND;
         p.OPEN            = p.STARTBETWEEN || p.START;
-console.log(event.type + ' ' + event.timestamp);
+
         if(p.ON) {
             if(p.FULL || p.EMPTY) {
                 if(p.FULL) {
@@ -73,7 +73,7 @@ console.log(event.type + ' ' + event.timestamp);
             if(p.FULL) {
                 // previous end = between
                 if (!p.BETWEEN) { this.timeslot.between = [];}
-                this.timeslot.between = this.timeslot.end;
+                this.timeslot.between.push(this.timeslot.end);
                 this.timeslot.end = event;
             } else if(p.OPEN) {
                 // end
@@ -93,15 +93,11 @@ console.log(event.type + ' ' + event.timestamp);
     }
 
     shellCloseHandler () {
-        this.emit('complete', this.queue);
+        this.emit('complete');
     }
 
-    fetchNewData () {
+    collectNewData () {
         this.shell.getData();
-    }
-
-    getData () {
-        return this.queue;
     }
 }
 

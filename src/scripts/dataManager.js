@@ -12,26 +12,107 @@ class DataManager extends EventEmitter {
 
         super();
 
-        this.previousCallbackTime = null;
-        this.eventArray = null;
-        this.previousEventArray = null;
+        this.previousDataCollectTimestamp = null;
+        this.eventArray = {};
+        this.manipulatedEventArray = {};
 
         this.dataCollector = new DataCollector();
 
-        this.dataCollector.on('timeslot', dataCollectorTimeslotHandler);
-        this.dataCollector.on('complete', dataCollectorCompleteHandler);
+        this.dataCollector.on('timeslot', this.dataCollectorTimeslotHandler.bind(this));
+        this.dataCollector.on('complete', this.dataCollectorCompleteHandler.bind(this));
     }
 
     dataCollectorTimeslotHandler(timeslot) {
 
-        this.eventArray.push(timeslot);
-
+        this.splitAndArchiveTimeslot(timeslot);
     }
 
-    dataCollectorCompleteHandler(timeslots) {
+    splitAndArchiveTimeslot(timeslot) {
 
-        this.eventArray = timeslots;
+        if(timeslot.start.timestamp.toDateString() !== timeslot.end.timestamp.toDateString()) {
+
+            var timeslotPart = timeslot;
+            timeslotPart.end.timestamp = timeslot.start.timestamp;
+            timeslotPart.end.timestamp.setHours(23,59,59,999);
+
+            this.archiveTimeslot(timeslotPart);
+
+            // TODO
+            // split up between data
+
+            var timeslotRest = timeslot;
+            timeslotRest.start.timestamp.setDate(timeslot.start.timestamp.getDate() + 1);
+            timeslotRest.start.timestamp.setHours(0,0,0,0);
+
+            this.splitAndArchiveTimeslot(timeslotRest);
+        } else {
+
+            this.archiveTimeslot(timeslot);
+        }
     }
+
+    archiveTimeslot(timeslot) {
+
+        const day = timeslot.start.timestamp.toDateString();
+
+        if(!this.eventArray[day]) {
+            this.eventArray[day] = [];
+        }
+
+        // if already in array do not add
+
+        this.eventArray[day].push(timeslot);
+
+        // TODO
+        // only emit when asked dates have new data
+
+        this.emit('newdata');
+    }
+
+    dataCollectorCompleteHandler() {
+
+        // this.emit('newdata');
+    }
+
+    getTotalForDate(date) {
+
+        const dayAsDateString = date.toDateString();
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+        const minTime = now.setMilliseconds(config.settings.minTime);
+        const maxTime = now.setMilliseconds(config.settings.maxTime);
+
+        let total = 0;
+
+        total = this.manipulatedEventArray[dayAsDateString].reduce(function(total, timeslot){
+
+            let value = 0;
+
+            if(timeslot.start.timestamp.getTime() < maxTime && timeslot.end.timestamp.getTime() > minTime) {
+                value = Math.abs(timeslot.end.timestamp.getTime() - timeslot.start.timestamp.getTime())
+            }
+
+            return total + value;
+        });
+
+        return total;
+    }
+
+    getTotals(startDate, endDate){
+
+        var totals = [];
+
+        const days = Math.ceil(Math.abs((endDate.getTime() - startDate.getTime())/(24*60*60*1000)));
+
+        for(var i = 0; i <= days; i++) {
+            totals[startDate.getDay()] = this.getTotalForDate(startDate.setDate(startDate.getDate() + i));
+        }
+
+        return totals;
+    }
+
+
+    // dataCollector.collectNewData();
 
 
     // group by ssid
@@ -39,394 +120,428 @@ class DataManager extends EventEmitter {
 
     // emit only new data
 
-    getData(callback) {
-        let timePassed = Date.now() - this.previousCallbackTime;
+    checkforNewData() {
+
+        let timePassed = Date.now() - this.previousDataCollectTimestamp;
 
         if(timePassed > config.settings.cacheTime || isNaN(timePassed)){
-            let eventList = dataCollector.getData();
 
-            this.eventArray = this.eventArray.concat(eventList);
+            this.previousDataCollectTimestamp = new Date();
 
-            _sortEventArray();
-            _parseSSID();
-            _colorSSID();
-
-            this.previousCallbackTime = new Date();
-            this.previousEventArray = this.eventArray.slice(0);
-
-            _startParsing(callback);
-        }else{
-            this.eventArray = this.previousEventArray.slice(0);
-            startParsing(callback);
+            this.dataCollector.collectNewData();
         }
     }
 
-    filter() {
-      
+    getData(startDate, endDate) {
+        // get fresh data
+        this.manipulatedEventArray = {};
+
+        while(startDate.getTime() < endDate.getTime()) {
+
+            if(this.eventArray[endDate.toDateString()]) {
+
+                this.manipulatedEventArray[endDate.toDateString()] = JSON.parse(JSON.stringify(this.eventArray[endDate.toDateString()]));
+            }
+
+            endDate.setDate(endDate.getDate() - 1);
+        }
+
+        // back to date fron stringify
+
+        this.sort();
+        this.merge();
+
+        // manipulate array
+
+        return this.manipulatedEventArray;
+        //
+        // _sortEventArray();
+        // _parseSSID();
+        // _colorSSID();
+        // startParsing(callback);
     }
 
+    sort() {
+        Object.keys(this.manipulatedEventArray).forEach(function(key) {
+            this.manipulatedEventArray[key].sort(function(a,b){
+                return new Date(a.start.timestamp).getTime() - new Date(b.start.timestamp).getTime();
+            });
+        }.bind(this));
+    }
 
     merge() {
-        let i = eventArray.length;
 
-        while (i--) {
+        Object.keys(this.manipulatedEventArray).forEach(function(key) {
 
-            if ((previousEvent = eventArray[i - 1]) && (currentEvent = eventArray[i])){
+            let i = this.manipulatedEventArray[key].length;
 
-                if (previousEvent.event === 'off' && currentEvent.event === 'on'){
+            while (i--) {
 
-                    if((config.settings.filter && previousEvent.ssid === currentEvent.ssid) ||
-                        !config.settings.filter){
+                const previousTimeslot = this.manipulatedEventArray[key][i - 1];
+                const currentTimeslot  = this.manipulatedEventArray[key][i];
 
-                        if ((currentEvent.date - previousEvent.date) < config.settings.mergeTime){
+                if (previousTimeslot && currentTimeslot &&
+                   (new Date(currentTimeslot.start.timestamp).getTime() - new Date(previousTimeslot.end.timestamp).getTime()) < config.settings.mergeTime) {
 
-                            eventArray.splice(i-1, 2);
-                            i--;
-                        }
+                    if(!previousTimeslot.between) {
+                        this.manipulatedEventArray[key][i - 1].between = [];
                     }
+
+                    this.manipulatedEventArray[key][i - 1].between.push(currentTimeslot.start);
+                    this.manipulatedEventArray[key][i - 1].between.concat(currentTimeslot.between);
+                    this.manipulatedEventArray[key][i - 1].end = currentTimeslot.end;
+
+                    this.manipulatedEventArray[key].splice(i, 1);
                 }
             }
-        }
+        }.bind(this));
     }
 
+    getSSIDs() {
+
+        return this.eventColors ? Object.keys(eventColors) : [];
+    }
 }
 
-var eventArray,
-    previousCallbackTime,
-    previousEventArray,
-    colorList,
-    observable,
-    eventColors;
-
-var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.logOptions,
-    securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.logOptions;
-
-
-/**
- * @function getLog
- * @public
- */
-var getLog = function(callback){
-
-    var timePassed = Date.now() - previousCallbackTime;
-
-    if(timePassed > config.settings.cacheTime || isNaN(timePassed)){
-
-        eventArray = [];
-
-        _executeScript(callback);
-    }else{
-
-        eventArray = previousEventArray.slice(0);
-
-        _startParsing(callback);
-    }
-};
-
-
-/**
- * @function _executeScript
- * @private
- */
-var _executeScript = function(callback){
-
-
-    /**
-     * @function _securityScriptCallback
-     * @private
-     */
-    var _securityScriptCallback = function (eventList) {
-
-        eventArray = eventArray.concat(eventList);
-
-        _sortEventArray();
-        _parseSSID();
-        _colorSSID();
-
-        previousCallbackTime = new Date();
-        previousEventArray = eventArray.slice(0);
-
-        _startParsing(callback);
-    };
-
-
-    /**
-     * @function _script
-     * @private
-     */
-    var _systemScriptCallback = function (eventList) {
-
-        eventArray = eventArray.concat(eventList);
-
-        Shell.getEvents(securityScriptOptions, _securityScriptCallback);
-    };
-
-    Shell.getEvents(systemScriptOptions, config.settings.windows ? _systemScriptCallback : _securityScriptCallback);
-};
-
-
-/**
- * @function _startParsing
- * @private
- */
-var _startParsing = function(callback){
-
-    _mergeEvents();
-    _addCurrentTime();
-
-    callback(_prepareCollection());
-};
-
-
-/**
- * @function _colorSSID
- * @private
- */
-var _colorSSID = function(){
-
-    colorList = [
-        '#009688', // Teal
-        '#FF5722', // Deep Orange
-        '#2196F3', // Blue
-        '#F44336', // Red
-        '#673AB7', // Deep purple
-        '#E91E63', // Pink
-        '#607D8B', // Blue Grey
-        '#9C27B0', // Purple
-        '#795548'  // Brown
-    ];
-    eventColors = {'none': colorList.shift()};
-
-    for (var i = 0, l = eventArray.length; i < l; i++){
-
-        if(!(eventArray[i].ssid in eventColors)){
-
-            eventColors[eventArray[i].ssid] = colorList.shift();
-        }
-    }
-};
-
-
-/**
- * @function _parseSSID
- * @private
- */
-var _parseSSID = function(){
-
-    var el = eventArray.length;
-    var ssid = 'none';
-
-    firstOnEvent = eventArray.length;
-
-
-    for (var i = 0; currentEvent = eventArray[i]; i++){
-
-        currentEvent.ssid = ssid;
-
-        if(currentEvent.event === 'on' && firstOnEvent > i){
-
-            firstOnEvent = i;
-        }
-
-        if(currentEvent.event === 'off'){
-
-            if(firstOnEvent < eventArray.length){
-
-                for(var j = firstOnEvent; j < i; j++){
-
-                    eventArray[j].ssid = ssid;
-                }
-
-                firstOnEvent = eventArray.length;
-            }
-        }
-
-        if(currentEvent.event === 'set'){
-
-            ssid = currentEvent.data;
-
-            if(firstOnEvent < eventArray.length){
-
-                for(var j = firstOnEvent; j < i; j++){
-
-                    eventArray[j].ssid = ssid;
-                }
-            }
-        }
-    }
-
-    config.settings.currentSSID = ssid;
-
-    while (el--) {
-
-        if(eventArray[el].event === 'set'){
-
-            eventArray.splice(el,1);
-        }
-    }
-};
-
-
-/**
- * @function _addCurrentTime
- * @private
- */
-var _addCurrentTime = function(){
-
-    /**
-     * add the current time as last array.
-     */
-    eventArray.push({
-        "date" : new Date(),
-        "event": 'off',
-        "log": 'added'
-    });
-};
-
-
-/**
- * @function _prepareCollection
- * @private
- */
-var _prepareCollection = function(){
-
-    var collection = [];
-
-    /**
-     * merge start- and endevents together
-     */
-    for (var i = 0, l = eventArray.length; i < l; i++){
-
-        if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
-            startEvent.event === 'on' && endEvent.event === 'off'){
-
-            var title = (startEvent.ssid === 'none' || startEvent.ssid === 'undefined') ? '' : ' ' + startEvent.ssid;
-
-            var event = {
-                'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + (config.settings.filter ? title : ''),
-                'start': startEvent.date.toJSON(),
-                'end': endEvent.date.toJSON()
-            };
-
-            if(config.settings.filter){
-
-                event.color = eventColors[startEvent.ssid];
-            }
-
-            collection.push(event);
-        }
-    }
-
-    return collection;
-};
-
-
-/**
- * @function _sortEventArray
- * @private
- */
- var _sortEventArray = function(){
-
-    /**
-     * sort events on date
-     */
-    eventArray.sort(function(a,b){
-
-        return new Date(a.date) - new Date(b.date);
-    });
-};
-
-
-/**
- * set options
- */
-var setOptions = function(key, value){
-
-    config.settings[key] = value;
-};
-
-
-/**
- * @function getTotals
- * @public
- */
-var getTotals = function(view, minTime, maxTime, ssid){
-
-    return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime, ssid);
-};
-
-
-/**
- * @function getTodaysTotal
- * @public
- */
-var getTodaysTotal = function(minTime, maxTime){
-
-    var today = new Date();
-
-    return (_getSpecificTotals(today.setHours(0,0,0,0), today.setHours(23,59,59,999), minTime, maxTime))[today.getDay()] || 0;
-};
-
-
-/**
- * @function _getSpecificTotals
- * @private
- */
-var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
-
-    var totals = [];
-
-    if(eventArray) {
-
-        for (var i = 0, l = eventArray.length; i < l; i++){
-
-            if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
-                startEvent.event === 'on' && endEvent.event === 'off' &&
-                startEvent.date >= startDate && startEvent.date <= endDate &&
-                startEvent.date.getDay() === endEvent.date.getDay()){
-
-                if(minTime && maxTime){
-
-                    var startHour =
-                        (startEvent.date.getHours() * 60 * 60 * 1000) +
-                        (startEvent.date.getMinutes() * 60 * 1000) +
-                        (startEvent.date.getSeconds() * 1000);
-
-                    var endHour =
-                        (endEvent.date.getHours() * 60 * 60 * 1000) +
-                        (endEvent.date.getMinutes() * 60 * 1000) +
-                        (endEvent.date.getSeconds() * 1000);
-
-                    if(startHour > maxTime || endHour < minTime){
-
-                        continue;
-                    }
-                }
-
-                if(config.settings.filter && ssid && startEvent.ssid !== ssid){
-
-                    continue
-                }
-
-                totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + ((endEvent.log === 'added' ? new Date() : endEvent.date) - startEvent.date);
-            }
-        }
-    }
-
-    return totals;
-};
-
-/**
- * @function getSSIDs
- * @public
- */
-var getSSIDs = function(){
-
-    return eventColors ? Object.keys(eventColors) : [];
-}
-
-exports.getLog = getLog;
-exports.setOptions = setOptions;
-exports.getTotals = getTotals;
-exports.getTodaysTotal = getTodaysTotal;
-exports.getSSIDs = getSSIDs;
+module.exports = DataManager;
+
+//
+// var eventArray,
+//     previousCallbackTime,
+//     previousEventArray,
+//     colorList,
+//     observable,
+//     eventColors;
+//
+// var systemScriptOptions   = config.settings.windows ? config.settings.wevtutilSystemOptions   : config.settings.logOptions,
+//     securityScriptOptions = config.settings.windows ? config.settings.wevtutilSecurityOptions : config.settings.logOptions;
+//
+//
+// /**
+//  * @function getLog
+//  * @public
+//  */
+// var getLog = function(callback){
+//
+//     var timePassed = Date.now() - previousCallbackTime;
+//
+//     if(timePassed > config.settings.cacheTime || isNaN(timePassed)){
+//
+//         eventArray = [];
+//
+//         _executeScript(callback);
+//     }else{
+//
+//         eventArray = previousEventArray.slice(0);
+//
+//         _startParsing(callback);
+//     }
+// };
+//
+//
+// /**
+//  * @function _executeScript
+//  * @private
+//  */
+// var _executeScript = function(callback){
+//
+//
+//     /**
+//      * @function _securityScriptCallback
+//      * @private
+//      */
+//     var _securityScriptCallback = function (eventList) {
+//
+//         eventArray = eventArray.concat(eventList);
+//
+//         _sortEventArray();
+//         _parseSSID();
+//         _colorSSID();
+//
+//         previousCallbackTime = new Date();
+//         previousEventArray = eventArray.slice(0);
+//
+//         _startParsing(callback);
+//     };
+//
+//
+//     /**
+//      * @function _script
+//      * @private
+//      */
+//     var _systemScriptCallback = function (eventList) {
+//
+//         eventArray = eventArray.concat(eventList);
+//
+//         Shell.getEvents(securityScriptOptions, _securityScriptCallback);
+//     };
+//
+//     Shell.getEvents(systemScriptOptions, config.settings.windows ? _systemScriptCallback : _securityScriptCallback);
+// };
+//
+//
+// /**
+//  * @function _startParsing
+//  * @private
+//  */
+// var _startParsing = function(callback){
+//
+//     _mergeEvents();
+//     _addCurrentTime();
+//
+//     callback(_prepareCollection());
+// };
+//
+//
+// /**
+//  * @function _colorSSID
+//  * @private
+//  */
+// var _colorSSID = function(){
+//
+//     colorList = [
+//         '#009688', // Teal
+//         '#FF5722', // Deep Orange
+//         '#2196F3', // Blue
+//         '#F44336', // Red
+//         '#673AB7', // Deep purple
+//         '#E91E63', // Pink
+//         '#607D8B', // Blue Grey
+//         '#9C27B0', // Purple
+//         '#795548'  // Brown
+//     ];
+//     eventColors = {'none': colorList.shift()};
+//
+//     for (var i = 0, l = eventArray.length; i < l; i++){
+//
+//         if(!(eventArray[i].ssid in eventColors)){
+//
+//             eventColors[eventArray[i].ssid] = colorList.shift();
+//         }
+//     }
+// };
+//
+//
+// /**
+//  * @function _parseSSID
+//  * @private
+//  */
+// var _parseSSID = function(){
+//
+//     var el = eventArray.length;
+//     var ssid = 'none';
+//
+//     firstOnEvent = eventArray.length;
+//
+//
+//     for (var i = 0; currentEvent = eventArray[i]; i++){
+//
+//         currentEvent.ssid = ssid;
+//
+//         if(currentEvent.event === 'on' && firstOnEvent > i){
+//
+//             firstOnEvent = i;
+//         }
+//
+//         if(currentEvent.event === 'off'){
+//
+//             if(firstOnEvent < eventArray.length){
+//
+//                 for(var j = firstOnEvent; j < i; j++){
+//
+//                     eventArray[j].ssid = ssid;
+//                 }
+//
+//                 firstOnEvent = eventArray.length;
+//             }
+//         }
+//
+//         if(currentEvent.event === 'set'){
+//
+//             ssid = currentEvent.data;
+//
+//             if(firstOnEvent < eventArray.length){
+//
+//                 for(var j = firstOnEvent; j < i; j++){
+//
+//                     eventArray[j].ssid = ssid;
+//                 }
+//             }
+//         }
+//     }
+//
+//     config.settings.currentSSID = ssid;
+//
+//     while (el--) {
+//
+//         if(eventArray[el].event === 'set'){
+//
+//             eventArray.splice(el,1);
+//         }
+//     }
+// };
+//
+//
+// /**
+//  * @function _addCurrentTime
+//  * @private
+//  */
+// var _addCurrentTime = function(){
+//
+//     /**
+//      * add the current time as last array.
+//      */
+//     eventArray.push({
+//         "date" : new Date(),
+//         "event": 'off',
+//         "log": 'added'
+//     });
+// };
+//
+//
+// /**
+//  * @function _prepareCollection
+//  * @private
+//  */
+// var _prepareCollection = function(){
+//
+//     var collection = [];
+//
+//     /**
+//      * merge start- and endevents together
+//      */
+//     for (var i = 0, l = eventArray.length; i < l; i++){
+//
+//         if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
+//             startEvent.event === 'on' && endEvent.event === 'off'){
+//
+//             var title = (startEvent.ssid === 'none' || startEvent.ssid === 'undefined') ? '' : ' ' + startEvent.ssid;
+//
+//             var event = {
+//                 'title' : helpers.milliSecondsToTimeString(endEvent.date - startEvent.date) + (config.settings.filter ? title : ''),
+//                 'start': startEvent.date.toJSON(),
+//                 'end': endEvent.date.toJSON()
+//             };
+//
+//             if(config.settings.filter){
+//
+//                 event.color = eventColors[startEvent.ssid];
+//             }
+//
+//             collection.push(event);
+//         }
+//     }
+//
+//     return collection;
+// };
+//
+//
+// /**
+//  * @function _sortEventArray
+//  * @private
+//  */
+//  var _sortEventArray = function(){
+//
+//     /**
+//      * sort events on date
+//      */
+//     eventArray.sort(function(a,b){
+//
+//         return new Date(a.date) - new Date(b.date);
+//     });
+// };
+//
+//
+// /**
+//  * set options
+//  */
+// var setOptions = function(key, value){
+//
+//     config.settings[key] = value;
+// };
+//
+//
+// /**
+//  * @function getTotals
+//  * @public
+//  */
+// var getTotals = function(view, minTime, maxTime, ssid){
+//
+//     return _getSpecificTotals(view.start.toDate(), view.end.toDate(), minTime, maxTime, ssid);
+// };
+//
+//
+// /**
+//  * @function getTodaysTotal
+//  * @public
+//  */
+// var getTodaysTotal = function(minTime, maxTime){
+//
+//     var today = new Date();
+//
+//     return (_getSpecificTotals(today.setHours(0,0,0,0), today.setHours(23,59,59,999), minTime, maxTime))[today.getDay()] || 0;
+// };
+//
+//
+// /**
+//  * @function _getSpecificTotals
+//  * @private
+//  */
+// var _getSpecificTotals = function(startDate, endDate, minTime, maxTime, ssid){
+//
+//     var totals = [];
+//
+//     if(eventArray) {
+//
+//         for (var i = 0, l = eventArray.length; i < l; i++){
+//
+//             if((startEvent = eventArray[i]) && (endEvent = eventArray[i + 1]) &&
+//                 startEvent.event === 'on' && endEvent.event === 'off' &&
+//                 startEvent.date >= startDate && startEvent.date <= endDate &&
+//                 startEvent.date.getDay() === endEvent.date.getDay()){
+//
+//                 if(minTime && maxTime){
+//
+//                     var startHour =
+//                         (startEvent.date.getHours() * 60 * 60 * 1000) +
+//                         (startEvent.date.getMinutes() * 60 * 1000) +
+//                         (startEvent.date.getSeconds() * 1000);
+//
+//                     var endHour =
+//                         (endEvent.date.getHours() * 60 * 60 * 1000) +
+//                         (endEvent.date.getMinutes() * 60 * 1000) +
+//                         (endEvent.date.getSeconds() * 1000);
+//
+//                     if(startHour > maxTime || endHour < minTime){
+//
+//                         continue;
+//                     }
+//                 }
+//
+//                 if(config.settings.filter && ssid && startEvent.ssid !== ssid){
+//
+//                     continue
+//                 }
+//
+//                 totals[startEvent.date.getDay()] = (totals[startEvent.date.getDay()] || 0 ) + ((endEvent.log === 'added' ? new Date() : endEvent.date) - startEvent.date);
+//             }
+//         }
+//     }
+//
+//     return totals;
+// };
+//
+// /**
+//  * @function getSSIDs
+//  * @public
+//  */
+// var getSSIDs = function(){
+//
+//     return eventColors ? Object.keys(eventColors) : [];
+// }
+//
+// exports.getLog = getLog;
+// exports.setOptions = setOptions;
+// exports.getTotals = getTotals;
+// exports.getTodaysTotal = getTodaysTotal;
+// exports.getSSIDs = getSSIDs;
