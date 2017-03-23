@@ -309,8 +309,8 @@ var refreshCalendarEvents = function(timeout){
 
 
 var createTimeSlot = function(event) {
-    var startDateTime = new Date(event.start.timestamp);
-    var endDateTime = new Date(event.end.timestamp);
+    var startDateTime = event.start.timestamp;
+    var endDateTime = event.end.timestamp;
 
     var timeslot = {
         title: helpers.milliSecondsToTimeString(endDateTime - startDateTime),

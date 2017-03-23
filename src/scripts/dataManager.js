@@ -148,8 +148,12 @@ class DataManager extends EventEmitter {
 
         // back to date fron stringify
 
-        this.sort();
-        this.merge();
+
+        Object.keys(this.manipulatedEventArray).forEach(function(key) {
+            this.convert(key);
+            this.sort(key);
+            this.merge(key);
+        }.bind(this));
 
         // manipulate array
 
@@ -161,40 +165,43 @@ class DataManager extends EventEmitter {
         // startParsing(callback);
     }
 
-    sort() {
-        Object.keys(this.manipulatedEventArray).forEach(function(key) {
-            this.manipulatedEventArray[key].sort(function(a,b){
-                return new Date(a.start.timestamp).getTime() - new Date(b.start.timestamp).getTime();
-            });
-        }.bind(this));
+    convert(key) {
+        this.manipulatedEventArray[key].map(function(timeslot){
+            timeslot.start.timestamp = (typeof timeslot.start.timestamp === 'string') ? new Date(timeslot.start.timestamp) : timeslot.start.timestamp;
+            timeslot.end.timestamp = (typeof timeslot.end.timestamp === 'string') ? new Date(timeslot.end.timestamp) : timeslot.end.timestamp;
+            return timeslot;
+        });
     }
 
-    merge() {
+    sort(key) {
+        this.manipulatedEventArray[key].sort(function(a,b){
+            return a.start.timestamp.getTime() - b.start.timestamp.getTime();
+        });
+    }
 
-        Object.keys(this.manipulatedEventArray).forEach(function(key) {
+    merge(key) {
 
-            let i = this.manipulatedEventArray[key].length;
+        let i = this.manipulatedEventArray[key].length;
 
-            while (i--) {
+        while (i--) {
 
-                const previousTimeslot = this.manipulatedEventArray[key][i - 1];
-                const currentTimeslot  = this.manipulatedEventArray[key][i];
+            const previousTimeslot = this.manipulatedEventArray[key][i - 1];
+            const currentTimeslot  = this.manipulatedEventArray[key][i];
 
-                if (previousTimeslot && currentTimeslot &&
-                   (new Date(currentTimeslot.start.timestamp).getTime() - new Date(previousTimeslot.end.timestamp).getTime()) < config.settings.mergeTime) {
+            if (previousTimeslot && currentTimeslot &&
+               (currentTimeslot.start.timestamp.getTime() - previousTimeslot.end.timestamp.getTime()) < config.settings.mergeTime) {
 
-                    if(!previousTimeslot.between) {
-                        this.manipulatedEventArray[key][i - 1].between = [];
-                    }
-
-                    this.manipulatedEventArray[key][i - 1].between.push(currentTimeslot.start);
-                    this.manipulatedEventArray[key][i - 1].between.concat(currentTimeslot.between);
-                    this.manipulatedEventArray[key][i - 1].end = currentTimeslot.end;
-
-                    this.manipulatedEventArray[key].splice(i, 1);
+                if(!previousTimeslot.between) {
+                    this.manipulatedEventArray[key][i - 1].between = [];
                 }
+
+                this.manipulatedEventArray[key][i - 1].between.push(currentTimeslot.start);
+                this.manipulatedEventArray[key][i - 1].between.concat(currentTimeslot.between);
+                this.manipulatedEventArray[key][i - 1].end = currentTimeslot.end;
+
+                this.manipulatedEventArray[key].splice(i, 1);
             }
-        }.bind(this));
+        }
     }
 
     getSSIDs() {
