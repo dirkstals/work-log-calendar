@@ -149,35 +149,30 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
 
     callback(calendarData);
 
+    if(settings.showTotals){
 
-        // callback(data);
-        //
-        // if(settings.showTotals){
-        //
-        //     var calendarView = calendarElement.fullCalendar('getView');
-        //
-        //     if(calendarView.type === settings.view[0]){
-        //
-        //         var totals = dataManager.getTotals(calendarView, options.minTime, options.maxTime, settings.currentSSID);
-        //
-        //         for (var i = 0, l = settings.days.length; i < l; i++){
-        //
-        //             if(weekElement = document.querySelector('.fc-day-header.fc-' + settings.days[i])){
-        //
-        //                 if(totals[i]){
-        //
-        //                     weekElement.classList.add('total');
-        //                     weekElement.setAttribute('data-total', helpers.milliSecondsToTimeString(totals[i]));
-        //                 }else{
-        //
-        //                     weekElement.classList.remove('total');
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        var calendarView = calendarElement.fullCalendar('getView');
 
+        if(calendarView.type === settings.view[0]){
 
+            var totals = dataManager.getTotals(start.toDate(), end.toDate());
+
+            for (var i = 0, l = settings.days.length; i < l; i++){
+
+                if(weekElement = document.querySelector('.fc-day-header.fc-' + settings.days[i])){
+
+                    if(totals[i]){
+
+                        weekElement.classList.add('total');
+                        weekElement.setAttribute('data-total', helpers.milliSecondsToTimeString(totals[i]));
+                    }else{
+
+                        weekElement.classList.remove('total');
+                    }
+                }
+            }
+        }
+    }
 }
 
 

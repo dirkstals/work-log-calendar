@@ -71,42 +71,54 @@ class DataManager extends EventEmitter {
 
     dataCollectorCompleteHandler() {
 
-        // this.emit('newdata');
+        // send to cloud
     }
 
-    getTotalForDate(date) {
+    getTotalForDate(day) {
 
-        const dayAsDateString = date.toDateString();
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
-        const minTime = now.setMilliseconds(config.settings.minTime);
-        const maxTime = now.setMilliseconds(config.settings.maxTime);
+        const startOfDay = new Date(day.getFullYear(),day.getMonth(),day.getDate(),0,0,0);
+        const minTime = startOfDay.setMilliseconds(config.settings.minTime);
+        const maxTime = startOfDay.setMilliseconds(config.settings.maxTime);
 
         let total = 0;
 
-        total = this.manipulatedEventArray[dayAsDateString].reduce(function(total, timeslot){
+        if(this.manipulatedEventArray[day.toDateString()]) {
 
-            let value = 0;
+            for(let i = 0; i < this.manipulatedEventArray[day.toDateString()].length; i++) {
+                const timeslot = this.manipulatedEventArray[day.toDateString()][i];
+                let value = 0;
 
-            if(timeslot.start.timestamp.getTime() < maxTime && timeslot.end.timestamp.getTime() > minTime) {
-                value = Math.abs(timeslot.end.timestamp.getTime() - timeslot.start.timestamp.getTime())
+                if(timeslot.start.timestamp.getTime() < maxTime && timeslot.end.timestamp.getTime() > minTime) {
+                    value = Math.abs(timeslot.end.timestamp.getTime() - timeslot.start.timestamp.getTime())
+                }
+
+                total += value;
             }
-
-            return total + value;
-        });
+        }
 
         return total;
+    }
+
+    doForEachDay(startDate, endDate, callback) {
+
+        const days = Math.ceil(Math.abs((endDate.getTime() - startDate.getTime())/(24*60*60*1000)));
+
+        for(var i = 0; i < days; i++) {
+            let selectedDayDate = new Date(endDate.getTime());
+            selectedDayDate.setDate(endDate.getDate() - (days - i));
+            callback(selectedDayDate);
+        }
     }
 
     getTotals(startDate, endDate){
 
         var totals = [];
 
-        const days = Math.ceil(Math.abs((endDate.getTime() - startDate.getTime())/(24*60*60*1000)));
-
-        for(var i = 0; i <= days; i++) {
-            totals[startDate.getDay()] = this.getTotalForDate(startDate.setDate(startDate.getDate() + i));
-        }
+        this.doForEachDay(startDate, endDate, function(day){
+            if(this.eventArray[day.toDateString()]) {
+                totals[day.getDay()] = this.getTotalForDate(day);
+            }
+        }.bind(this));
 
         return totals;
     }
@@ -136,22 +148,21 @@ class DataManager extends EventEmitter {
         // get fresh data
         this.manipulatedEventArray = {};
 
-        while(startDate.getTime() < endDate.getTime()) {
-
-            if(this.eventArray[endDate.toDateString()]) {
-
-                this.manipulatedEventArray[endDate.toDateString()] = JSON.parse(JSON.stringify(this.eventArray[endDate.toDateString()]));
+        this.doForEachDay(startDate, endDate, function(day){
+            if(this.eventArray[day.toDateString()]) {
+                this.manipulatedEventArray[day.toDateString()] = JSON.parse(JSON.stringify(this.eventArray[day.toDateString()]));
             }
+        }.bind(this));
 
-            endDate.setDate(endDate.getDate() - 1);
-        }
+        // get cloud data
 
-        // back to date fron stringify
+        // back to date from stringify
 
 
         Object.keys(this.manipulatedEventArray).forEach(function(key) {
             this.convert(key);
             this.sort(key);
+            // remove doubles
             this.merge(key);
         }.bind(this));
 
