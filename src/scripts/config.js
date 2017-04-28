@@ -60,7 +60,7 @@ var settings = {
         }
     },
     logOptions: {
-        pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\s.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\s?(\S+\sBSSID\s[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2})?/gm,
+        pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\s.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\s?(\S+\sBSSID\s[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2})?(\'.*\')?/gm,
         command: 'log',
         parameters: ['show', '--style', 'syslog','--info'], //, '--predicate', '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'],
 

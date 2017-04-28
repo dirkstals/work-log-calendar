@@ -13,7 +13,10 @@ class DataManager extends EventEmitter {
         super();
 
         this.previousDataCollectTimestamp = null;
-        this.eventArray = {};
+        this.currentStartDate = null;
+        this.currentEndDate = null;
+
+        this.eventArray = window.localStorage.getItem('events') ? JSON.parse(window.localStorage.getItem('events')) : {};
         this.manipulatedEventArray = {};
 
         this.dataCollector = new DataCollector();
@@ -54,23 +57,42 @@ class DataManager extends EventEmitter {
     archiveTimeslot(timeslot) {
 
         const day = timeslot.start.timestamp.toDateString();
+        let match = false;
 
         if(!this.eventArray[day]) {
             this.eventArray[day] = [];
         }
 
-        // if already in array do not add
+        //timeslot = this.parseSSID(timeslot);
 
-        this.eventArray[day].push(timeslot);
+        // do not add if allready in cache
+        for(var i = 0, l = this.eventArray[day].length; i < l; i++) {
+            if(this.eventArray[day][i].start.timestamp === timeslot.start.timestamp &&
+               this.eventArray[day][i].end.timestamp === timeslot.end.timestamp) {
+                match = true;
+            }
+        }
 
-        // TODO
-        // only emit when asked dates have new data
+        if(!match) {
+            this.eventArray[day].push(timeslot);
 
-        this.emit('newdata');
+            // only emit when asked dates have new data
+            if(this.currentStartDate &&
+               this.currentEndDate &&
+               timeslot.start.timestamp.getTime() > this.currentStartDate.getTime() &&
+               timeslot.end.timestamp.getTime() < this.currentEndDate.getTime()) {
+                this.emit('newdata');
+            }
+        }
     }
+    //
+    // parseSSID(timeslot) {
+    //     timeslot.between.type.set
+    //     this.SSIDS.push();
+    // }
 
     dataCollectorCompleteHandler() {
-
+        window.localStorage.setItem('events', JSON.stringify(this.eventArray));
         // send to cloud
     }
 
@@ -82,18 +104,15 @@ class DataManager extends EventEmitter {
 
         let total = 0;
 
-        if(this.manipulatedEventArray[day.toDateString()]) {
+        for(let i = 0; i < this.manipulatedEventArray[day.toDateString()].length; i++) {
+            const timeslot = this.manipulatedEventArray[day.toDateString()][i];
+            let value = 0;
 
-            for(let i = 0; i < this.manipulatedEventArray[day.toDateString()].length; i++) {
-                const timeslot = this.manipulatedEventArray[day.toDateString()][i];
-                let value = 0;
-
-                if(timeslot.start.timestamp.getTime() < maxTime && timeslot.end.timestamp.getTime() > minTime) {
-                    value = Math.abs(timeslot.end.timestamp.getTime() - timeslot.start.timestamp.getTime())
-                }
-
-                total += value;
+            if(timeslot.start.timestamp.getTime() < maxTime && timeslot.end.timestamp.getTime() > minTime) {
+                value = Math.abs(timeslot.end.timestamp.getTime() - timeslot.start.timestamp.getTime())
             }
+
+            total += value;
         }
 
         return total;
@@ -115,7 +134,7 @@ class DataManager extends EventEmitter {
         var totals = [];
 
         this.doForEachDay(startDate, endDate, function(day){
-            if(this.eventArray[day.toDateString()]) {
+            if(this.manipulatedEventArray[day.toDateString()]) {
                 totals[day.getDay()] = this.getTotalForDate(day);
             }
         }.bind(this));
@@ -125,7 +144,6 @@ class DataManager extends EventEmitter {
 
 
     // dataCollector.collectNewData();
-
 
     // group by ssid
     // filter by date (range, merge)
@@ -148,6 +166,10 @@ class DataManager extends EventEmitter {
         // get fresh data
         this.manipulatedEventArray = {};
 
+        // store date slot
+        this.currentStartDate = startDate;
+        this.currentEndDate = endDate;
+
         this.doForEachDay(startDate, endDate, function(day){
             if(this.eventArray[day.toDateString()]) {
                 this.manipulatedEventArray[day.toDateString()] = JSON.parse(JSON.stringify(this.eventArray[day.toDateString()]));
@@ -156,9 +178,6 @@ class DataManager extends EventEmitter {
 
         // get cloud data
 
-        // back to date from stringify
-
-
         Object.keys(this.manipulatedEventArray).forEach(function(key) {
             this.convert(key);
             this.sort(key);
@@ -166,17 +185,14 @@ class DataManager extends EventEmitter {
             this.merge(key);
         }.bind(this));
 
-        // manipulate array
-
         return this.manipulatedEventArray;
-        //
-        // _sortEventArray();
+
         // _parseSSID();
         // _colorSSID();
-        // startParsing(callback);
     }
 
     convert(key) {
+        // back to date from stringify
         this.manipulatedEventArray[key].map(function(timeslot){
             timeslot.start.timestamp = (typeof timeslot.start.timestamp === 'string') ? new Date(timeslot.start.timestamp) : timeslot.start.timestamp;
             timeslot.end.timestamp = (typeof timeslot.end.timestamp === 'string') ? new Date(timeslot.end.timestamp) : timeslot.end.timestamp;
@@ -299,19 +315,6 @@ module.exports = DataManager;
 //
 //
 // /**
-//  * @function _startParsing
-//  * @private
-//  */
-// var _startParsing = function(callback){
-//
-//     _mergeEvents();
-//     _addCurrentTime();
-//
-//     callback(_prepareCollection());
-// };
-//
-//
-// /**
 //  * @function _colorSSID
 //  * @private
 //  */
@@ -401,23 +404,6 @@ module.exports = DataManager;
 //
 //
 // /**
-//  * @function _addCurrentTime
-//  * @private
-//  */
-// var _addCurrentTime = function(){
-//
-//     /**
-//      * add the current time as last array.
-//      */
-//     eventArray.push({
-//         "date" : new Date(),
-//         "event": 'off',
-//         "log": 'added'
-//     });
-// };
-//
-//
-// /**
 //  * @function _prepareCollection
 //  * @private
 //  */
@@ -454,29 +440,6 @@ module.exports = DataManager;
 // };
 //
 //
-// /**
-//  * @function _sortEventArray
-//  * @private
-//  */
-//  var _sortEventArray = function(){
-//
-//     /**
-//      * sort events on date
-//      */
-//     eventArray.sort(function(a,b){
-//
-//         return new Date(a.date) - new Date(b.date);
-//     });
-// };
-//
-//
-// /**
-//  * set options
-//  */
-// var setOptions = function(key, value){
-//
-//     config.settings[key] = value;
-// };
 //
 //
 // /**

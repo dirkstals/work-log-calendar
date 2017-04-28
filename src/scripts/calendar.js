@@ -140,11 +140,6 @@ var _calendarEventsHandler = function(start, end, timezone, callback) {
         }
     });
 
-    //console.log(calendarData);
-    //calendarData = [].concat.apply([], calendarData);
-
-    //console.log([].concat.apply([], data));
-
     // manipulate for fullcalendar
 
     callback(calendarData);
@@ -301,6 +296,19 @@ var refreshCalendarEvents = function(timeout){
     calendarElement.fullCalendar('refetchEvents');
 };
 
+var SSIDColors = {};
+var currentColorListCounter = 0;
+var colorList = [
+    '#009688', // Teal
+    '#FF5722', // Deep Orange
+    '#2196F3', // Blue
+    '#F44336', // Red
+    '#673AB7', // Deep purple
+    '#E91E63', // Pink
+    '#607D8B', // Blue Grey
+    '#9C27B0', // Purple
+    '#795548'  // Brown
+];
 
 
 var createTimeSlot = function(event) {
@@ -313,6 +321,19 @@ var createTimeSlot = function(event) {
         end: endDateTime.toJSON(),
         data: event.data
     };
+
+    if(event.between) {
+        for(var i = 0, l = event.between.length; i < l; i++) {
+            if(event.between[i].type === 'set' && event.between[i].data) {
+              console.log(event.between[i].data);
+                if(!SSIDColors[event.between[i].data]) {
+                    SSIDColors[event.between[i].data] = colorList[currentColorListCounter];
+                    currentColorListCounter++;
+                }
+                timeslot.color = SSIDColors[event.between[i].data];
+            }
+        }
+    }
 
     return timeslot;
 };
