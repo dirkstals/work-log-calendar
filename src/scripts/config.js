@@ -59,6 +59,33 @@ var settings = {
             next: 'arrow_forward'
         }
     },
+    pmsetOptions: {
+        pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).[\+|\-]\d+[\s|Notification]+(DarkWake|Wake|Sleep|Display is turned on|Display is turned off)(.*)/gm,
+        command: 'pmset',
+        parameters: ['-g', 'log'],
+        events: {
+            'Wake': {
+                'type': 'on',
+                'description': 'wake'
+            },
+            'DarkWake': {
+                'type': 'on',
+                'description': 'dark wake'
+            },
+            'Sleep': {
+                'type': 'off',
+                'description': 'sleep'
+            },
+            'Display is turned off': {
+                'type': 'off',
+                'description': 'turned off display'
+            },
+            'Display is turned on': {
+                'type': 'on',
+                'description': 'turned on display'
+            }
+        }
+    },
     logOptions: {
         pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\s.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\s?(\S+\sBSSID\s[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2})?(\'.*\')?/gm,
         command: 'log',

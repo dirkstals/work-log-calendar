@@ -325,7 +325,6 @@ var createTimeSlot = function(event) {
     if(event.between) {
         for(var i = 0, l = event.between.length; i < l; i++) {
             if(event.between[i].type === 'set' && event.between[i].data) {
-              console.log(event.between[i].data);
                 if(!SSIDColors[event.between[i].data]) {
                     SSIDColors[event.between[i].data] = colorList[currentColorListCounter];
                     currentColorListCounter++;

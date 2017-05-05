@@ -42,6 +42,9 @@ class Shell extends EventEmitter {
     }
 
     shellCloseHandler (code) {
+        if(this.days === 0) {
+            this.emit('currentday');
+        }
         this.days = 0;
         this.emit('close');
     }
@@ -58,13 +61,13 @@ class Shell extends EventEmitter {
             m[7] = m[7].replace('/', '');
             const type = this.options.events[m[7].trim()] ? this.options.events[m[7].trim()].type : null;
             const description = this.options.events[m[7].trim()] ? this.options.events[m[7].trim()].description : null;
-
-            this.emit('output', {
+            const parsedData = {
                 timestamp: new Date(m[1] ? m[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + m[2])).getMonth(), m[3], m[4], m[5], m[6]),
                 type: type,
                 description: description,
                 data: m[8] ? m[8].substring(0, m[8].indexOf(' BSSID')) : m[9] ? m[9].replace(/^'|'$/g, '') : null
-            });
+            };
+            this.emit('output', parsedData);
         }
     }
 }
