@@ -11,9 +11,11 @@ class Shell extends EventEmitter {
 
     constructor() {
         super();
-        this.options = config.settings.logOptions;
+        this.options = config.settings.pmsetOptions;
         this.parameters = this.options.parameters.slice(0);
         this.days = 0;
+        this.parseOnOut = false;
+        this.allData = [];
     }
 
     getData() {
@@ -42,7 +44,9 @@ class Shell extends EventEmitter {
     }
 
     shellCloseHandler (code) {
-        if(this.days === 0) {
+        if(!this.parseOnOut) {
+            this.parseData(this.allData, this.options);
+
             this.emit('currentday');
         }
         this.days = 0;
@@ -54,13 +58,21 @@ class Shell extends EventEmitter {
     }
 
     shellOutHandler (data) {
+        if(this.parseOnOut) {
+            this.parseData(data, this.options);
+        } else {
+            this.allData += data;
+        }
+    }
+
+    parseData (data, options) {
         let m = null;
 
-        while (m = this.options.pattern.exec(data)) {
+        while (m = options.pattern.exec(data)) {
             m[7] = m[7].replace('_', '');
             m[7] = m[7].replace('/', '');
-            const type = this.options.events[m[7].trim()] ? this.options.events[m[7].trim()].type : null;
-            const description = this.options.events[m[7].trim()] ? this.options.events[m[7].trim()].description : null;
+            const type = options.events[m[7].trim()] ? options.events[m[7].trim()].type : null;
+            const description = options.events[m[7].trim()] ? options.events[m[7].trim()].description : null;
             const parsedData = {
                 timestamp: new Date(m[1] ? m[1] : new Date().getFullYear(), new Date(Date.parse("2000 " + m[2])).getMonth(), m[3], m[4], m[5], m[6]),
                 type: type,
