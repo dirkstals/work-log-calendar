@@ -16,7 +16,7 @@ class DataManager extends EventEmitter {
         this.currentStartDate = null;
         this.currentEndDate = null;
 
-        this.eventArray = window.localStorage.getItem('events') ? JSON.parse(window.localStorage.getItem('events')) : {};
+        this.eventArray = {}; //window.localStorage.getItem('events') ? JSON.parse(window.localStorage.getItem('events')) : {};
         this.manipulatedEventArray = {};
 
         this.dataCollector = new DataCollector();
@@ -184,6 +184,13 @@ class DataManager extends EventEmitter {
             // remove doubles
             this.merge(key);
         }.bind(this));
+
+        var today = new Date();
+        var todaysEvents = this.manipulatedEventArray[today.toDateString()];
+
+        if(todaysEvents) {
+            this.manipulatedEventArray[today.toDateString()][todaysEvents.length - 1].end.timestamp = today;
+        }
 
         return this.manipulatedEventArray;
 
