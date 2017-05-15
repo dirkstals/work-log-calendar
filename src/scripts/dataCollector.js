@@ -59,7 +59,7 @@ class DataCollector extends EventEmitter {
 
         if(p.ON) {
             if(p.FULL || p.EMPTY) {
-                if(p.FULL) {
+                if(p.FULL && this.timeslot.start.timestamp.getTime() !== this.timeslot.end.timestamp.getTime()) {
                     this.queue.push(this.timeslot);
                     this.emit('timeslot', this.timeslot);
                 }
