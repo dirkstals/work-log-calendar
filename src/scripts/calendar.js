@@ -4,7 +4,6 @@ var DataManager = require('./dataManager');
 var config = require('./config');
 var helpers = require('./helpers');
 var templates = require('./templates');
-var DataCollector = require('./dataCollector');
 
 global.document = window.document;
 
@@ -47,7 +46,7 @@ var renderCalendar = function(options, open){
  */
 var _prepareMenuItems = function(){
 
-    var wrapper= document.createElement('div');
+    var wrapper = document.createElement('div');
     var ssids = dataManager.getSSIDs();
     var totalItems = [];
 
@@ -322,7 +321,7 @@ var createTimeSlot = function(event) {
         data: event.data
     };
 
-    if(event.between) {
+    if(event.between && settings.filter) {
         for(var i = 0, l = event.between.length; i < l; i++) {
             if(event.between[i].type === 'set' && event.between[i].data) {
                 if(!SSIDColors[event.between[i].data]) {
@@ -330,6 +329,7 @@ var createTimeSlot = function(event) {
                     currentColorListCounter++;
                 }
                 timeslot.color = SSIDColors[event.between[i].data];
+                timeslot.title += ' ' + event.between[i].data;
             }
         }
     }

@@ -90,13 +90,11 @@ var settings = {
         pattern: /^(\d+)\-(\d+)\-(\d+)\s(\d+)\:(\d+)\:(\d+).\d+?[\+|\-]\d+\s.*(System Sleep|System Wake|System SafeSleep Wake|System SafeSleep|IODisplayWrangler\+ \(1\)|IODisplayWrangler\- \(0\)|[^B]SSID)\s?(\S+\sBSSID\s[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2}\:[0-9]{1,2})?(\'.*\')?/gm,
         command: 'log',
         parameters: ['show', '--style', 'syslog','--info'], //, '--predicate', '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'],
-
+        parseOnOut: true,
         start: ['--start', 'YYYY-MM-DD'],
         end: ['--end', 'YYYY-MM-DD'],
 
         // "Process interface link ""
-
-
 
         // log show --start "2016-12-19 00:00:00" --style syslog --info --predicate '(processImagePath CONTAINS "kernel" || processImagePath CONTAINS "configd") && (eventMessage CONTAINS "PMRD" || eventMessage CONTAINS " SSID ")'
         events: { // '--start', '2016-12-08 00:00:00', '--end', '2016-12-09 00:00:00',
@@ -295,6 +293,12 @@ settings.calendar.minTime = settings.minTime;
 settings.calendar.maxTime = settings.maxTime;
 settings.calendar.defaultView = settings.view[0];
 
+
+/**
+ * Settings based log options
+ */
+settings.log = settings.windows ? settings.wevtutilSystemOptions : settings.pmsetOptions;
+settings.logMore = settings.windows ? settings.wevtutilSecurityOptions : settings.logOptions;
 
 /**
  * Messages

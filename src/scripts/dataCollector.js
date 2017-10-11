@@ -3,6 +3,7 @@
 
 const EventEmitter = require('events');
 const Shell = require('./shell');
+const config = require('./config');
 const EVENTTYPES = {
     OFF: 'off',
     ON: 'on',
@@ -22,7 +23,16 @@ class DataCollector extends EventEmitter {
         this.shell.on('close', this.shellCloseHandler.bind(this));
         this.shell.on('currentday', this.currentDayHandler.bind(this));
 
-        this.shell.getData();
+        this.shell.getData(config.settings.log);
+
+        this.shell2 = new Shell();
+
+        this.shell2.on('output', this.shellOutputHandler.bind(this));
+        this.shell2.on('close', this.shellCloseHandler.bind(this));
+        this.shell2.on('currentday', this.currentDayHandler.bind(this));
+
+        this.shell2.getData(config.settings.logMore);
+
     }
 
     currentDayHandler() {
@@ -97,7 +107,8 @@ class DataCollector extends EventEmitter {
     }
 
     collectNewData () {
-        this.shell.getData();
+        this.shell.getData(config.settings.log);
+        this.shell2.getData(config.settings.logMore);
     }
 }
 

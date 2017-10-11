@@ -5,20 +5,21 @@ const util = require('util');
 const spawn = require('child_process').spawn;
 const EventEmitter = require('events');
 const moment = require('moment');
-const config = require('./config');
 
 class Shell extends EventEmitter {
 
-    constructor() {
+    constructor(options) {
         super();
-        this.options = config.settings.pmsetOptions;
-        this.parameters = this.options.parameters.slice(0);
         this.days = 0;
-        this.parseOnOut = false;
         this.allData = [];
     }
 
-    getData() {
+    getData(options) {
+        if(options) {
+            this.options = options;
+            this.parameters = this.options.parameters.slice(0);
+        }
+
         if(this.days === 1) {
             this.emit('currentday');
         }
@@ -44,7 +45,7 @@ class Shell extends EventEmitter {
     }
 
     shellCloseHandler (code) {
-        if(!this.parseOnOut) {
+        if(!this.options.parseOnOut) {
             this.parseData(this.allData, this.options);
 
             this.emit('currentday');
@@ -58,7 +59,7 @@ class Shell extends EventEmitter {
     }
 
     shellOutHandler (data) {
-        if(this.parseOnOut) {
+        if(this.options.parseOnOut) {
             this.parseData(data, this.options);
         } else {
             this.allData += data;

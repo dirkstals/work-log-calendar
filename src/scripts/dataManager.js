@@ -16,13 +16,27 @@ class DataManager extends EventEmitter {
         this.currentStartDate = null;
         this.currentEndDate = null;
 
-        this.eventArray = {}; //window.localStorage.getItem('events') ? JSON.parse(window.localStorage.getItem('events')) : {};
+        this.eventArray = {};
         this.manipulatedEventArray = {};
 
         this.dataCollector = new DataCollector();
 
         this.dataCollector.on('timeslot', this.dataCollectorTimeslotHandler.bind(this));
         this.dataCollector.on('complete', this.dataCollectorCompleteHandler.bind(this));
+
+        this.getPreviousEventArrayData();
+    }
+
+    getPreviousEventArrayData() {
+        let previousdata = window.localStorage.getItem('events') ? JSON.parse(window.localStorage.getItem('events')) : {};
+
+        Object.keys(previousdata).forEach(function(key) {
+            previousdata[key].forEach(function(timeslot) {
+                timeslot.start.timestamp = (typeof timeslot.start.timestamp === 'string') ? new Date(timeslot.start.timestamp) : timeslot.start.timestamp;
+                timeslot.end.timestamp = (typeof timeslot.end.timestamp === 'string') ? new Date(timeslot.end.timestamp) : timeslot.end.timestamp;
+                this.archiveTimeslot(timeslot);
+            }.bind(this));
+        }.bind(this));
     }
 
     dataCollectorTimeslotHandler(timeslot) {
@@ -55,7 +69,6 @@ class DataManager extends EventEmitter {
     }
 
     archiveTimeslot(timeslot) {
-
         const day = timeslot.start.timestamp.toDateString();
         let match = false;
 
@@ -92,8 +105,9 @@ class DataManager extends EventEmitter {
     // }
 
     dataCollectorCompleteHandler() {
+        console.log('data saved');
         window.localStorage.setItem('events', JSON.stringify(this.eventArray));
-        // send to cloud
+        // send to cloud and don't use here
     }
 
     getTotalForDate(day) {
@@ -170,13 +184,12 @@ class DataManager extends EventEmitter {
         this.currentStartDate = startDate;
         this.currentEndDate = endDate;
 
+        // use cloud data for this
         this.doForEachDay(startDate, endDate, function(day){
             if(this.eventArray[day.toDateString()]) {
                 this.manipulatedEventArray[day.toDateString()] = JSON.parse(JSON.stringify(this.eventArray[day.toDateString()]));
             }
         }.bind(this));
-
-        // get cloud data
 
         Object.keys(this.manipulatedEventArray).forEach(function(key) {
             this.convert(key);
@@ -193,9 +206,6 @@ class DataManager extends EventEmitter {
         }
 
         return this.manipulatedEventArray;
-
-        // _parseSSID();
-        // _colorSSID();
     }
 
     convert(key) {
